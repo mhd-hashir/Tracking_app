@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // Hashed
+  role      String   // ADMIN, OWNER, EMPLOYEE
+  
+  // Relations
+  ownerId   String?  // If user is Employee, this links to their Owner
+  owner     User?    @relation("OwnerEmployees", fields: [ownerId], references: [id])
+  employees User[]   @relation("OwnerEmployees") // If user is Owner, list of employees
+
+  shops     Shop[]
+  routes    Route[]
+  collections Collection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Live Tracking
+  lastLatitude  Float?
+  lastLongitude Float?
+  lastLocationUpdate DateTime?
+  
+  locationHistory LocationHistory[]
+}
+
+model LocationHistory {
+  id        String   @id @default(cuid())
+  latitude  Float
+  longitude Float
+  timestamp DateTime @default(now())
+  
+  employeeId String
+  employee   User     @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Shop {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  dueAmount Float    @default(0)
+  geofenceRadius Int @default(500) // Safe zone in meters
+  mobile    String?  // Contact number
+  
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  
+  routeStops RouteStop[]
+  collections Collection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Route {
+  id        String   @id @default(cuid())
+  name      String
+  dayOfWeek String   // MONDAY, TUESDAY, etc.
+  
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  
+  stops     RouteStop[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RouteStop {
+  id        String   @id @default(cuid())
+  order     Int
+  
+  routeId   String
+  route     Route    @relation(fields: [routeId], references: [id])
+  
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  amount      Float
+  paymentMode String   // CASH, UPI, CHECK, BANK_TRANSFER
+  remarks     String?
+  
+  // Location of collection
+  latitude    Float?
+  longitude   Float?
+  
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  
+  employeeId  String
+  employee    User     @relation(fields: [employeeId], references: [id])
+
+  collectedAt DateTime @default(now())
+}
