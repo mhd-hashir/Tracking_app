@@ -29,6 +29,7 @@ export async function submitCollectionAction(prevState: any, formData: FormData)
                 data: {
                     shopId,
                     employeeId: session.user.id,
+                    amount,
                     paymentMode,
                     remarks,
                     latitude,
