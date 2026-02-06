@@ -16,6 +16,7 @@ model User {
   name      String?
   password  String   // Hashed
   role      String   // ADMIN, OWNER, EMPLOYEE
+  ownedDomain String? // Custom domain for this owner (e.g., "company.com")
   
   // Relations
   ownerId   String?  // If user is Employee, this links to their Owner

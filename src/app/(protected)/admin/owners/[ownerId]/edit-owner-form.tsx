@@ -8,6 +8,7 @@ interface EditOwnerFormProps {
         id: string
         name: string | null
         email: string
+        ownedDomain: string | null
     }
 }
 
@@ -29,6 +30,12 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Email</label>
                         <input name="email" defaultValue={owner.email} type="email" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Custom Domain</label>
+                        <p className="text-xs text-gray-500">Overrides global default for this owner's employees</p>
+                        <input name="domain" defaultValue={owner.ownedDomain || ''} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="Leave empty to use global default" />
                     </div>
 
                     <div>

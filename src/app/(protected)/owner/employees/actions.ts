@@ -16,12 +16,20 @@ export async function addEmployeeAction(prevState: any, formData: FormData) {
     const password = formData.get('password') as string
 
     // Domain Logic
+    // Prioritize Owner's specific domain, fallback to Global Settings
     const settings = await getGlobalSettings()
+    const owner = await prisma.user.findUnique({ where: { id: session.user.id } })
+
+    let defaultDomain = settings.defaultDomain
+    if (owner?.ownedDomain) {
+        defaultDomain = owner.ownedDomain
+    }
+
     let email = formData.get('email') as string
     const username = formData.get('username') as string
 
     if (username) {
-        email = `${username}@${settings.defaultDomain}`
+        email = `${username}@${defaultDomain}`
     }
 
     if (!email || !password || !name) {
@@ -62,12 +70,20 @@ export async function updateEmployeeAction(prevState: any, formData: FormData) {
     const password = formData.get('password') as string
 
     // Domain Logic
+    // Prioritize Owner's specific domain, fallback to Global Settings
     const settings = await getGlobalSettings()
+    const owner = await prisma.user.findUnique({ where: { id: session.user.id } })
+
+    let defaultDomain = settings.defaultDomain
+    if (owner?.ownedDomain) {
+        defaultDomain = owner.ownedDomain
+    }
+
     let email = formData.get('email') as string
     const username = formData.get('username') as string
 
     if (username) {
-        email = `${username}@${settings.defaultDomain}`
+        email = `${username}@${defaultDomain}`
     }
 
     if (!name || !email) return { error: 'Name and Email/Username are required' }

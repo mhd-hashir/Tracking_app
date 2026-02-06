@@ -18,17 +18,23 @@ export function CreateOwnerForm({ defaultDomain }: CreateOwnerFormProps) {
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Username</label>
-                <div className="mt-1 flex rounded-md shadow-sm">
+                <div className="flex -space-x-px">
                     <input
                         type="text"
                         name="username"
                         required
-                        className="block w-full min-w-0 flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                        placeholder="john.doe"
+                        className="block w-1/2 min-w-0 rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-right pr-1"
+                        placeholder="username"
                     />
-                    <span className="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
-                        @{defaultDomain}
-                    </span>
+                    <span className="inline-flex items-center px-1 text-gray-500 border border-y-0 border-gray-300 bg-gray-50">@</span>
+                    <input
+                        type="text"
+                        name="domain"
+                        required
+                        defaultValue={defaultDomain}
+                        className="block w-1/2 min-w-0 rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 pl-1"
+                        placeholder="domain.com"
+                    />
                 </div>
             </div>
             <div>

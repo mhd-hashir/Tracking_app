@@ -13,15 +13,16 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string
     const username = formData.get('username') as string
+    const domain = formData.get('domain') as string
     const password = formData.get('password') as string
 
-    if (!username || !password || !name) {
+    if (!username || !domain || !password || !name) {
         return { error: 'All fields are required' }
     }
 
     try {
-        const settings = await getGlobalSettings()
-        const email = `${username}@${settings.defaultDomain}`
+        // Construct email from custom domain
+        const email = `${username}@${domain}`
 
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) {
@@ -35,6 +36,7 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
                 email,
                 password: hashedPassword,
                 role: 'OWNER',
+                ownedDomain: domain, // Store the custom domain
             },
         })
 
@@ -53,11 +55,16 @@ export async function updateOwnerAction(prevState: any, formData: FormData) {
     const ownerId = formData.get('ownerId') as string
     const name = formData.get('name') as string
     const email = formData.get('email') as string
+    const domain = formData.get('domain') as string
     const password = formData.get('password') as string
 
     if (!name || !email) return { error: 'All fields are required' }
 
-    const data: any = { name, email }
+    const data: any = {
+        name,
+        email,
+        ownedDomain: domain && domain.trim() !== '' ? domain : null
+    }
 
     if (password && password.trim() !== '') {
         data.password = await hashPassword(password)
