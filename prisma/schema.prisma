@@ -19,7 +19,7 @@ model User {
   
   // Relations
   ownerId   String?  // If user is Employee, this links to their Owner
-  owner     User?    @relation("OwnerEmployees", fields: [ownerId], references: [id])
+  owner     User?    @relation("OwnerEmployees", fields: [ownerId], references: [id], onDelete: Cascade)
   employees User[]   @relation("OwnerEmployees") // If user is Owner, list of employees
 
   shops     Shop[]
@@ -44,7 +44,7 @@ model LocationHistory {
   timestamp DateTime @default(now())
   
   employeeId String
-  employee   User     @relation(fields: [employeeId], references: [id])
+  employee   User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
@@ -60,7 +60,7 @@ model Shop {
   mobile    String?  // Contact number
   
   ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   
   routeStops RouteStop[]
   collections Collection[]
@@ -75,7 +75,7 @@ model Route {
   dayOfWeek String   // MONDAY, TUESDAY, etc.
   
   ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   
   stops     RouteStop[]
 
@@ -88,10 +88,10 @@ model RouteStop {
   order     Int
   
   routeId   String
-  route     Route    @relation(fields: [routeId], references: [id])
+  route     Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
   
   shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id])
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,10 +108,10 @@ model Collection {
   longitude   Float?
   
   shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id])
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   
   employeeId  String
-  employee    User     @relation(fields: [employeeId], references: [id])
+  employee    User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   collectedAt DateTime @default(now())
 }
