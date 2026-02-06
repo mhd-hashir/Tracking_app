@@ -20,6 +20,7 @@ export default async function AdminLayout({
                     <nav className="flex gap-4 text-sm font-medium text-gray-300">
                         <a href="/admin" className="hover:text-white transition">Dashboard</a>
                         <a href="/admin/owners" className="hover:text-white transition">Manage Owners</a>
+                        <a href="/admin/settings" className="hover:text-white transition">Settings</a>
                     </nav>
                 </div>
                 <div className="flex gap-4">

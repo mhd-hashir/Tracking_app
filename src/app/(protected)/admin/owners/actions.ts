@@ -1,8 +1,9 @@
 'use server'
 
 import { prisma } from '@/lib/db'
-import { getSession, hashPassword } from '@/lib/auth'
+import { getSession, hashPassword, verifyPassword } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { getGlobalSettings } from '../settings/actions'
 
 export async function createOwnerAction(prevState: any, formData: FormData) {
     const session = await getSession()
@@ -11,17 +12,20 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
     }
 
     const name = formData.get('name') as string
-    const email = formData.get('email') as string
+    const username = formData.get('username') as string
     const password = formData.get('password') as string
 
-    if (!email || !password || !name) {
+    if (!username || !password || !name) {
         return { error: 'All fields are required' }
     }
 
     try {
+        const settings = await getGlobalSettings()
+        const email = `${username}@${settings.defaultDomain}`
+
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) {
-            return { error: 'Email already exists' }
+            return { error: 'User already exists' }
         }
 
         const hashedPassword = await hashPassword(password)
@@ -76,14 +80,26 @@ export async function deleteOwnerAction(formData: FormData) {
     if (!session || session.user.role !== 'ADMIN') return { error: 'Unauthorized' }
 
     const ownerId = formData.get('ownerId') as string
+    const adminPassword = formData.get('adminPassword') as string
+
+    if (!adminPassword) return { error: 'Admin password required' }
 
     try {
+        // Verify Admin Password
+        const adminUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+        if (!adminUser) return { error: 'Admin not found' }
+
+        const valid = await verifyPassword(adminPassword, adminUser.password)
+        if (!valid) return { error: 'Invalid admin password' }
+
+        // Proceed to delete
         await prisma.user.delete({
             where: { id: ownerId }
         })
         revalidatePath('/admin/owners')
         return { success: true }
     } catch (e) {
+        console.error(e)
         return { error: 'Failed to delete owner' }
     }
 }

@@ -1,11 +1,13 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { AddEmployeeForm } from './add-employee-form'
+import { getGlobalSettings } from '../../admin/settings/actions'
 
 export default async function EmployeesPage() {
     const session = await getSession()
     if (!session) return null
 
+    const settings = await getGlobalSettings()
     const employees = await prisma.user.findMany({
         where: {
             role: 'EMPLOYEE',
@@ -24,7 +26,7 @@ export default async function EmployeesPage() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">Add New Employee</h3>
                     <div className="p-4 border rounded-lg bg-white shadow-sm">
-                        <AddEmployeeForm />
+                        <AddEmployeeForm defaultDomain={settings.defaultDomain} />
                     </div>
                 </div>
 

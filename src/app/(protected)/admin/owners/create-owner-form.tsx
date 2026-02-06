@@ -3,7 +3,11 @@
 import { useActionState } from "react"
 import { createOwnerAction } from './actions'
 
-export function CreateOwnerForm() {
+interface CreateOwnerFormProps {
+    defaultDomain: string
+}
+
+export function CreateOwnerForm({ defaultDomain }: CreateOwnerFormProps) {
     const [state, formAction, isPending] = useActionState(createOwnerAction, null)
 
     return (
@@ -13,8 +17,19 @@ export function CreateOwnerForm() {
                 <input name="name" type="text" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input name="email" type="email" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
+                <label className="block text-sm font-medium text-gray-700">Username</label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                        type="text"
+                        name="username"
+                        required
+                        className="block w-full min-w-0 flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        placeholder="john.doe"
+                    />
+                    <span className="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                        @{defaultDomain}
+                    </span>
+                </div>
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-700">Password</label>

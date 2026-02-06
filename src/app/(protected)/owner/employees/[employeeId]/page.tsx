@@ -4,10 +4,13 @@ import { EmployeeForm } from '../employee-form'
 import { updateEmployeeAction, deleteEmployeeAction } from '../actions'
 import { redirect } from 'next/navigation'
 
+import { getGlobalSettings } from '../../../admin/settings/actions'
+
 export default async function EditEmployeePage({ params }: { params: Promise<{ employeeId: string }> }) {
     const session = await getSession()
     if (!session || session.user.role !== 'OWNER') return <div>Unauthorized</div>
 
+    const settings = await getGlobalSettings()
     const { employeeId } = await params
 
     const employee = await prisma.user.findFirst({
@@ -40,6 +43,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
                     initialData={initialData}
                     submitLabel="Save Changes"
                     deleteAction={deleteEmployeeAction}
+                    defaultDomain={settings.defaultDomain}
                 />
             </div>
         </div>

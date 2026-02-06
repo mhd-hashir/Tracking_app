@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/db'
 import { CreateOwnerForm } from './create-owner-form'
+import { getGlobalSettings } from '../settings/actions'
 
 export default async function OwnersPage() {
+    const settings = await getGlobalSettings()
     const owners = await prisma.user.findMany({
         where: { role: 'OWNER' },
         orderBy: { createdAt: 'desc' },
@@ -25,7 +27,7 @@ export default async function OwnersPage() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">Add New Owner</h3>
                     <div className="p-4 border rounded-lg bg-white shadow-sm">
-                        <CreateOwnerForm />
+                        <CreateOwnerForm defaultDomain={settings.defaultDomain} />
                     </div>
                 </div>
 
@@ -62,7 +64,7 @@ export default async function OwnersPage() {
                                 ))}
                                 {owners.length === 0 && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">No owners found.</td>
+                                        <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">No owners found.</td>
                                     </tr>
                                 )}
                             </tbody>

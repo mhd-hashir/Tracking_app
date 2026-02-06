@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db'
 import { getSession, hashPassword } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
+import { getGlobalSettings } from '../../admin/settings/actions'
+
 export async function addEmployeeAction(prevState: any, formData: FormData) {
     const session = await getSession()
     if (!session || session.user.role !== 'OWNER') {
@@ -11,8 +13,16 @@ export async function addEmployeeAction(prevState: any, formData: FormData) {
     }
 
     const name = formData.get('name') as string
-    const email = formData.get('email') as string
     const password = formData.get('password') as string
+
+    // Domain Logic
+    const settings = await getGlobalSettings()
+    let email = formData.get('email') as string
+    const username = formData.get('username') as string
+
+    if (username) {
+        email = `${username}@${settings.defaultDomain}`
+    }
 
     if (!email || !password || !name) {
         return { error: 'All fields are required' }
@@ -21,7 +31,7 @@ export async function addEmployeeAction(prevState: any, formData: FormData) {
     try {
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) {
-            return { error: 'Email already exists' }
+            return { error: 'User already exists' }
         }
 
         const hashedPassword = await hashPassword(password)
@@ -49,10 +59,18 @@ export async function updateEmployeeAction(prevState: any, formData: FormData) {
 
     const employeeId = formData.get('employeeId') as string
     const name = formData.get('name') as string
-    const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    if (!name || !email) return { error: 'Name and Email are required' }
+    // Domain Logic
+    const settings = await getGlobalSettings()
+    let email = formData.get('email') as string
+    const username = formData.get('username') as string
+
+    if (username) {
+        email = `${username}@${settings.defaultDomain}`
+    }
+
+    if (!name || !email) return { error: 'Name and Email/Username are required' }
 
     const data: any = { name, email }
 

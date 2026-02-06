@@ -115,3 +115,9 @@ model Collection {
 
   collectedAt DateTime @default(now())
 }
+
+model GlobalSettings {
+  id            String   @id @default(cuid())
+  defaultDomain String   @default("fieldtrack.com") // e.g., "mycompany.com"
+  updatedAt     DateTime @updatedAt
+}

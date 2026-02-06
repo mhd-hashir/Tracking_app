@@ -11,10 +11,15 @@ interface EmployeeFormProps {
     }
     submitLabel: string
     deleteAction?: (formData: FormData) => Promise<any>
+    defaultDomain?: string
 }
 
-export function EmployeeForm({ action, initialData, submitLabel, deleteAction }: EmployeeFormProps) {
+export function EmployeeForm({ action, initialData, submitLabel, deleteAction, defaultDomain }: EmployeeFormProps) {
     const [state, formAction, isPending] = useActionState(action, null)
+
+    const initialUsername = defaultDomain && initialData?.email
+        ? initialData.email.split('@')[0]
+        : ''
 
     return (
         <div className="space-y-6">
@@ -31,16 +36,36 @@ export function EmployeeForm({ action, initialData, submitLabel, deleteAction }:
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                    <input
-                        name="email"
-                        type="email"
-                        required
-                        defaultValue={initialData?.email}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                    />
-                </div>
+
+                {defaultDomain ? (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Username</label>
+                        <div className="mt-1 flex rounded-md shadow-sm">
+                            <input
+                                type="text"
+                                name="username"
+                                required
+                                defaultValue={initialUsername}
+                                className="block w-full min-w-0 flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                                placeholder="john.doe"
+                            />
+                            <span className="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                                @{defaultDomain}
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input
+                            name="email"
+                            type="email"
+                            required
+                            defaultValue={initialData?.email}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        />
+                    </div>
+                )}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">
                         Password {initialData ? '(Leave blank to keep current)' : ''}
