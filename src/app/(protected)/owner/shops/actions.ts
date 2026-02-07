@@ -112,16 +112,35 @@ export async function importShopsAction(prevState: any, formData: FormData) {
 
             const dueAmount = parseFloat(dueRaw) || 0
 
-            await prisma.shop.create({
-                data: {
-                    name: String(name),
-                    address: String(address),
-                    mobile: mobile ? String(mobile) : null,
-                    dueAmount,
-                    ownerId: session.user.id
-                }
+            const existingShop = await prisma.shop.findFirst({
+                where: { ownerId: session.user.id, name: { equals: String(name), mode: 'insensitive' } }
             })
-            count++
+
+            if (existingShop) {
+                const updateData: any = {}
+                // Re-read row to check presence (avoid updating with defaults if missing)
+                if (row['Address'] !== undefined || row['Location'] !== undefined || row['address'] !== undefined) updateData.address = String(address)
+                if (row['Mobile'] !== undefined || row['Phone'] !== undefined || row['mobile'] !== undefined) updateData.mobile = mobile ? String(mobile) : null
+                // For Due Amount, we check if ANY key was present
+                const hasDueKey = row['Due Amount'] !== undefined || row['Due'] !== undefined || row['due amount'] !== undefined || row['due'] !== undefined
+                if (hasDueKey) updateData.dueAmount = dueAmount
+
+                if (Object.keys(updateData).length > 0) {
+                    await prisma.shop.update({ where: { id: existingShop.id }, data: updateData })
+                }
+                count++
+            } else {
+                await prisma.shop.create({
+                    data: {
+                        name: String(name),
+                        address: String(address),
+                        mobile: mobile ? String(mobile) : null,
+                        dueAmount,
+                        ownerId: session.user.id
+                    }
+                })
+                count++
+            }
         }
 
         revalidatePath('/owner/shops')
