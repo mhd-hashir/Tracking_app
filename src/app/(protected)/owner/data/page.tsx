@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { getCollectionsReport } from './actions'
+import { getCollectionsReport, getFilterOptions } from './actions'
 
 export default function DataPage() {
     // Default to current month
@@ -15,17 +15,35 @@ export default function DataPage() {
     const [loading, setLoading] = useState(false)
     const [report, setReport] = useState<{ summary: any, data: any[] } | null>(null)
 
+    // Filters
+    const [options, setOptions] = useState<{ shops: any[], employees: any[] }>({ shops: [], employees: [] })
+    const [selectedShop, setSelectedShop] = useState('ALL')
+    const [selectedEmployee, setSelectedEmployee] = useState('ALL')
+    const [selectedPaymentMode, setSelectedPaymentMode] = useState('ALL')
+
+    useEffect(() => {
+        // Fetch filter options on mount
+        getFilterOptions().then(data => {
+            if (data) setOptions(data)
+        })
+    }, [])
+
     const handleGenerate = async () => {
         try {
             setLoading(true)
-            const result = await getCollectionsReport(new Date(startDate), new Date(endDate))
+            const filters = {
+                shopId: selectedShop,
+                employeeId: selectedEmployee,
+                paymentMode: selectedPaymentMode
+            }
+            const result = await getCollectionsReport(new Date(startDate), new Date(endDate), filters)
 
             if ('error' in result) {
                 alert(result.error)
                 return
             }
 
-            setReport(result)
+            setReport(result as any)
         } catch (error) {
             console.error(error)
             alert("Failed to generate report")
@@ -49,32 +67,80 @@ export default function DataPage() {
             <h1 className="text-2xl font-bold">Data & Reports</h1>
 
             {/* Filter Section */}
-            <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-wrap items-end gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="border rounded p-2 text-sm"
-                    />
+            <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="block w-full border rounded p-2 text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="block w-full border rounded p-2 text-sm"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shop</label>
+                        <select
+                            value={selectedShop}
+                            onChange={(e) => setSelectedShop(e.target.value)}
+                            className="block w-full border rounded p-2 text-sm"
+                        >
+                            <option value="ALL">All Shops</option>
+                            {options.shops.map(shop => (
+                                <option key={shop.id} value={shop.id}>{shop.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Collected By</label>
+                        <select
+                            value={selectedEmployee}
+                            onChange={(e) => setSelectedEmployee(e.target.value)}
+                            className="block w-full border rounded p-2 text-sm"
+                        >
+                            <option value="ALL">All Employees</option>
+                            {options.employees.map(emp => (
+                                <option key={emp.id} value={emp.id}>{emp.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                        <select
+                            value={selectedPaymentMode}
+                            onChange={(e) => setSelectedPaymentMode(e.target.value)}
+                            className="block w-full border rounded p-2 text-sm"
+                        >
+                            <option value="ALL">All Methods</option>
+                            <option value="CASH">Cash</option>
+                            <option value="UPI">UPI</option>
+                            <option value="CHECK">Check</option>
+                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="border rounded p-2 text-sm"
-                    />
+
+                <div className="flex justify-end pt-2">
+                    <button
+                        onClick={handleGenerate}
+                        disabled={loading}
+                        className="bg-indigo-600 text-white px-6 py-2 rounded text-sm hover:bg-indigo-700 disabled:opacity-50 font-medium"
+                    >
+                        {loading ? 'Generating...' : 'Generate Report'}
+                    </button>
                 </div>
-                <button
-                    onClick={handleGenerate}
-                    disabled={loading}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
-                >
-                    {loading ? 'Generating...' : 'Generate Report'}
-                </button>
             </div>
 
             {/* Results Section */}
@@ -85,7 +151,9 @@ export default function DataPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                             <div className="text-sm text-green-600 font-medium">Total Collected</div>
-                            <div className="text-2xl font-bold text-green-800">₹{report.summary.totalCollected.toLocaleString()}</div>
+                            <div className="text-2xl font-bold text-green-800">
+                                ₹{report.summary.totalCollected.toLocaleString()}
+                            </div>
                         </div>
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                             <div className="text-sm text-blue-600 font-medium">Transactions</div>
