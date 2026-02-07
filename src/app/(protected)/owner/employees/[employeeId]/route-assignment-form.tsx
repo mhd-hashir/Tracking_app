@@ -24,8 +24,9 @@ export function RouteAssignmentForm({
     const [state, formAction, isPending] = useActionState(updateEmployeeRoutesAction, null)
 
     // Helper to get selected route ID for a day
+    // Since a route can span multiple days, we check if the route.dayOfWeek string includes the day
     const getAssignedRouteId = (day: string) => {
-        const route = assignedRoutes.find(r => r.dayOfWeek === day)
+        const route = assignedRoutes.find(r => r.dayOfWeek.includes(day))
         return route ? route.id : 'NONE'
     }
 
@@ -35,7 +36,8 @@ export function RouteAssignmentForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
                 {DAYS.map(day => {
-                    const availableRoutes = allRoutes.filter(r => r.dayOfWeek === day)
+                    // Filter routes that are active on this day
+                    const availableRoutes = allRoutes.filter(r => r.dayOfWeek.includes(day))
                     const currentId = getAssignedRouteId(day)
 
                     return (
@@ -53,10 +55,7 @@ export function RouteAssignmentForm({
                                         <option
                                             key={route.id}
                                             value={route.id}
-                                            disabled={!!isAssignedToOther} // Should we disable? Or allow stealing?
-                                        // The user didn't specify. Standard behavior: allow stealing if owner overrides.
-                                        // But "disabled" is safer to prevent accidental reassignment?
-                                        // Let's NOT disable, but add label if taken.
+                                        // Show if assigned to someone else, but allow override
                                         >
                                             {route.name} {isAssignedToOther ? '(Assigned to another)' : ''}
                                         </option>

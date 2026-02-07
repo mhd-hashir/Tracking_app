@@ -9,10 +9,13 @@ export async function createRouteAction(prevState: any, formData: FormData) {
     if (!session || session.user.role !== 'OWNER') return { error: 'Unauthorized' }
 
     const name = formData.get('name') as string
-    const dayOfWeek = formData.get('dayOfWeek') as string
+    const days = formData.getAll('dayOfWeek') as string[]
     const shopIds = formData.getAll('shopIds') as string[] // Checkbox values
 
-    if (!name || !dayOfWeek) return { error: 'Name and Day required' }
+    if (!name || days.length === 0) return { error: 'Name and Day required' }
+
+    // Join days into CSV string
+    const dayOfWeek = days.join(',')
 
     try {
         const route = await prisma.route.create({
@@ -41,10 +44,12 @@ export async function updateRouteAction(prevState: any, formData: FormData) {
 
     const routeId = formData.get('routeId') as string
     const name = formData.get('name') as string
-    const dayOfWeek = formData.get('dayOfWeek') as string
+    const days = formData.getAll('dayOfWeek') as string[]
     const shopIds = formData.getAll('shopIds') as string[]
 
-    if (!routeId || !name || !dayOfWeek) return { error: 'Missing Required Fields' }
+    if (!routeId || !name || days.length === 0) return { error: 'Missing Required Fields' }
+
+    const dayOfWeek = days.join(',')
 
     try {
         await prisma.route.update({

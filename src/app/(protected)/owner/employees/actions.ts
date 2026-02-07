@@ -164,7 +164,7 @@ export async function updateEmployeeRoutesAction(prevState: any, formData: FormD
             await prisma.route.updateMany({
                 where: {
                     assignedToId: employeeId,
-                    dayOfWeek: day,
+                    dayOfWeek: { contains: day },
                     ownerId: session.user.id
                 },
                 data: { assignedToId: null }
@@ -174,7 +174,11 @@ export async function updateEmployeeRoutesAction(prevState: any, formData: FormD
             if (routeId && routeId !== 'NONE') {
                 // Verify route belongs to owner and matches day
                 const route = await prisma.route.findFirst({
-                    where: { id: routeId, ownerId: session.user.id, dayOfWeek: day }
+                    where: {
+                        id: routeId,
+                        ownerId: session.user.id,
+                        dayOfWeek: { contains: day }
+                    }
                 })
 
                 if (route) {
