@@ -23,6 +23,8 @@ model User {
   owner     User?    @relation("OwnerEmployees", fields: [ownerId], references: [id], onDelete: Cascade)
   employees User[]   @relation("OwnerEmployees") // If user is Owner, list of employees
 
+  assignedRoutes Route[] @relation("AssignedRoutes")
+
   shops     Shop[]
   routes    Route[]
   collections Collection[]
@@ -78,6 +80,9 @@ model Route {
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   
+  assignedToId String?
+  assignedTo   User?    @relation("AssignedRoutes", fields: [assignedToId], references: [id], onDelete: SetNull)
+
   stops     RouteStop[]
 
   createdAt DateTime @default(now())
