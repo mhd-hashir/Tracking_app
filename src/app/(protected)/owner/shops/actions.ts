@@ -92,6 +92,7 @@ export async function importShopsAction(data: any[]) {
                 data: {
                     name: row.Name,
                     address: row.Address || '',
+                    mobile: row.Mobile ? String(row.Mobile) : null,
                     dueAmount: parseFloat(row.DueAmount) || 0,
                     ownerId: session.user.id
                 }

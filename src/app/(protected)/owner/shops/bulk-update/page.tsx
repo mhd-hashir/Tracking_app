@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { bulkUpdateShopDuesAction } from '../actions'
+import { DownloadBulkUpdateSampleButton } from '../sample-download'
 import Link from 'next/link'
 
 const initialState = {
@@ -32,6 +33,9 @@ export default function BulkUpdatePage() {
                         <li>The file must have columns: <strong>Shop Name</strong> and <strong>Due Amount</strong>.</li>
                         <li>Shop names must match exactly (case-insensitive).</li>
                     </ul>
+                    <div className="mt-2">
+                        <DownloadBulkUpdateSampleButton />
+                    </div>
                 </div>
 
                 <form action={formAction} className="space-y-4">
