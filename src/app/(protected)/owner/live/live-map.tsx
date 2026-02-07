@@ -36,20 +36,79 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {/* Live Employee Markers */}
-            {employees.map((emp, idx) => (
-                emp.lastLatitude && emp.lastLongitude && (
+            {employees.map((emp, idx) => {
+                if (!emp.lastLatitude || !emp.lastLongitude) return null
+
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `
+                        <style>
+                            @keyframes pulse-ring {
+                                0% { transform: scale(0.33); opacity: 1; }
+                                80%, 100% { transform: scale(1); opacity: 0; }
+                            }
+                        </style>
+                        <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%);">
+                            <div style="
+                                background-color: white; 
+                                padding: 6px 10px; 
+                                border-radius: 20px; 
+                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+                                font-weight: 700; 
+                                font-size: 13px; 
+                                border: 2px solid #6366f1;
+                                color: #4338ca;
+                                white-space: nowrap;
+                                margin-bottom: 8px;
+                                position: relative;
+                                z-index: 10;
+                            ">
+                                ${emp.name}
+                            </div>
+                            <div style="position: relative; width: 24px; height: 24px;">
+                                <div style="
+                                    position: absolute;
+                                    width: 100%;
+                                    height: 100%;
+                                    border-radius: 50%;
+                                    background-color: #6366f1;
+                                    opacity: 0.6;
+                                    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                                "></div>
+                                <div style="
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 12px; 
+                                    height: 12px; 
+                                    background-color: #4f46e5; 
+                                    border: 2px solid white; 
+                                    border-radius: 50%; 
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                "></div>
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [0, 0],
+                    iconAnchor: [0, 0]
+                })
+
+                return (
                     <Marker
                         key={`emp-${emp.id}`}
                         position={[emp.lastLatitude, emp.lastLongitude]}
-                        icon={icon}
+                        icon={customIcon}
                     >
                         <Popup>
-                            <div className="text-sm font-bold">{emp.name}</div>
-                            <div className="text-xs">Live Location</div>
+                            <div className="text-sm font-bold text-indigo-700">{emp.name}</div>
+                            <div className="text-xs text-gray-500">
+                                Last Active: {new Date(emp.lastActive).toLocaleTimeString()}
+                            </div>
                         </Popup>
                     </Marker>
                 )
-            ))}
+            })}
 
             {/* Travel Paths */}
             {Object.entries(historyPaths).map(([empId, path], idx) => (
