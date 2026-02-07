@@ -80,26 +80,57 @@ export async function deleteShopAction(formData: FormData) {
     return { success: true }
 }
 
-export async function importShopsAction(data: any[]) {
+export async function importShopsAction(prevState: any, formData: FormData) {
     const session = await getSession()
-    if (!session || session.user.role !== 'OWNER') return { error: 'Unauthorized' }
+    if (!session || session.user.role !== 'OWNER') return { success: false, error: 'Unauthorized', count: 0 }
 
-    // Bulk create
-    // Data expected keys: Name, Address, DueAmount
-    for (const row of data) {
-        if (row.Name) {
+    const file = formData.get('file') as File
+    if (!file) {
+        return { success: false, error: 'No file uploaded', count: 0 }
+    }
+
+    try {
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+        if (workbook.SheetNames.length === 0) return { success: false, error: 'Empty Excel file', count: 0 }
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const data: any[] = XLSX.utils.sheet_to_json(worksheet)
+
+        let count = 0
+
+        for (const row of data) {
+            // Flexible matching
+            const name = row['Name'] || row['Shop Name'] || row['shop name'] || row['name']
+            if (!name) continue
+
+            const address = row['Address'] || row['Location'] || row['address'] || ''
+            const mobile = row['Mobile'] || row['Phone'] || row['mobile'] || null
+            const dueRaw = row['Due Amount'] || row['Due'] || row['due amount'] || row['due'] || 0
+
+            const dueAmount = parseFloat(dueRaw) || 0
+
             await prisma.shop.create({
                 data: {
-                    name: row.Name,
-                    address: row.Address || '',
-                    mobile: row.Mobile ? String(row.Mobile) : null,
-                    dueAmount: parseFloat(row.DueAmount) || 0,
+                    name: String(name),
+                    address: String(address),
+                    mobile: mobile ? String(mobile) : null,
+                    dueAmount,
                     ownerId: session.user.id
                 }
             })
+            count++
         }
+
+        revalidatePath('/owner/shops')
+        return { success: true, count, error: undefined }
+
+    } catch (e) {
+        console.error(e)
+        return { success: false, error: 'Failed to process file', count: 0 }
     }
-    revalidatePath('/owner/shops')
 }
 
 export async function extractCoordinatesAction(urlInput: string) {

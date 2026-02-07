@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { ImportShopsButton } from './import-button'
 import { ExportButton } from './export-button'
 import { AddShopForm } from './add-shop-form'
 import Link from 'next/link'
@@ -19,7 +18,9 @@ export default async function ShopsPage() {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold tracking-tight">Manage Shops</h2>
                 <div className="flex gap-2">
-                    <ImportShopsButton />
+                    <Link href="/owner/shops/import" className="bg-white border rounded px-3 py-1.5 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                        📥 Import
+                    </Link>
                     <Link href="/owner/shops/bulk-update" className="bg-white border rounded px-3 py-1.5 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
                         📊 Bulk Update
                     </Link>
