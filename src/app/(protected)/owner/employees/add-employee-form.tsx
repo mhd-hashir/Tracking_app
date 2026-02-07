@@ -8,5 +8,10 @@ interface AddEmployeeFormProps {
 }
 
 export function AddEmployeeForm({ defaultDomain }: AddEmployeeFormProps) {
-    return <EmployeeForm action={addEmployeeAction} submitLabel="Add Employee" defaultDomain={defaultDomain} />
+    return (
+        <div>
+            <div className="text-xs text-gray-400 mb-2 text-right">Domain Scope: @{defaultDomain}</div>
+            <EmployeeForm action={addEmployeeAction} submitLabel="Add Employee" defaultDomain={defaultDomain} />
+        </div>
+    )
 }

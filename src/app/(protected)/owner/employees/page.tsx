@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth'
 import { AddEmployeeForm } from './add-employee-form'
 import { getGlobalSettings } from '../../admin/settings/actions'
 
+export const dynamic = 'force-dynamic'
+
 export default async function EmployeesPage() {
     const session = await getSession()
     if (!session) return null
