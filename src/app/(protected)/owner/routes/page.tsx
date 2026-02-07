@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { CreateRouteForm } from './create-route-form'
+import Link from 'next/link'
 
 export default async function RoutesPage() {
     const session = await getSession()
@@ -10,12 +11,14 @@ export default async function RoutesPage() {
         where: { ownerId: session.user.id },
         include: {
             _count: { select: { stops: true } }
-        }
+        },
+        orderBy: { updatedAt: 'desc' } // Sorting usually good
     })
 
     // Get shops to assign
     const shops = await prisma.shop.findMany({
-        where: { ownerId: session.user.id }
+        where: { ownerId: session.user.id },
+        orderBy: { name: 'asc' }
     })
 
     return (
@@ -36,10 +39,18 @@ export default async function RoutesPage() {
                     <h3 className="text-lg font-medium">Active Routes</h3>
                     <div className="grid gap-4">
                         {routes.map(route => (
-                            <div key={route.id} className="p-4 border rounded bg-white shadow-sm">
-                                <div className="font-bold">{route.name}</div>
-                                <div className="text-sm text-gray-500">{route.dayOfWeek}</div>
-                                <div className="mt-2 text-sm">{route._count.stops} Shops assigned</div>
+                            <div key={route.id} className="p-4 border rounded bg-white shadow-sm flex justify-between items-start">
+                                <div>
+                                    <div className="font-bold">{route.name}</div>
+                                    <div className="text-sm text-gray-500">{route.dayOfWeek}</div>
+                                    <div className="mt-2 text-sm text-gray-600">{route._count.stops} Shops assigned</div>
+                                </div>
+                                <Link
+                                    href={`/owner/routes/${route.id}`}
+                                    className="text-indigo-600 hover:text-indigo-900 text-sm font-medium border border-indigo-200 px-3 py-1 rounded hover:bg-indigo-50"
+                                >
+                                    Edit
+                                </Link>
                             </div>
                         ))}
                     </div>
