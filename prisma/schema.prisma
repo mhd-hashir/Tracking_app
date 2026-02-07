@@ -122,3 +122,18 @@ model GlobalSettings {
   defaultDomain String   @default("fieldtrack.com") // e.g., "mycompany.com"
   updatedAt     DateTime @updatedAt
 }
+
+model ImportBatch {
+  id        String   @id @default(cuid())
+  ownerId   String
+  createdAt DateTime @default(now())
+  
+  createdCount Int
+  updatedCount Int
+  
+  // JSON blob to store revert instructions
+  // Structure: { createdShopIds: string[], originalShops: Partial<Shop>[] }
+  revertData Json 
+
+  @@index([ownerId])
+}
