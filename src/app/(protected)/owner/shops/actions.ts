@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import * as XLSX from 'xlsx'
 
 export async function addShopAction(prevState: any, formData: FormData) {
     const session = await getSession()
@@ -198,4 +199,74 @@ export async function getAllShopsExportData() {
         Longitude: shop.longitude,
         'Created At': shop.createdAt.toISOString().split('T')[0]
     }))
+}
+
+export async function bulkUpdateShopDuesAction(prevState: any, formData: FormData) {
+    const session = await getSession()
+    if (!session || session.user.role !== 'OWNER') return { success: false, error: 'Unauthorized', updatedCount: 0, missingShops: [] as string[] }
+
+    const file = formData.get('file') as File
+    if (!file) {
+        return { success: false, error: 'No file uploaded', updatedCount: 0, missingShops: [] as string[] }
+    }
+
+    try {
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes) // Use Buffer.from instead of new Buffer
+        const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+        if (workbook.SheetNames.length === 0) return { success: false, error: 'Empty Excel file', updatedCount: 0, missingShops: [] as string[] }
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const data: any[] = XLSX.utils.sheet_to_json(worksheet)
+
+        let updatedCount = 0
+        const missingShops: string[] = []
+
+        for (const row of data) {
+            // Flexible column matching
+            const name = row['Shop Name'] || row['Name'] || row['shop name'] || row['name']
+
+            // Handle various Due Amount column names and types
+            let dueRaw = row['Due Amount'] || row['Due'] || row['due amount'] || row['due']
+
+            if (!name) continue
+
+            const dueAmount = parseFloat(dueRaw)
+            if (isNaN(dueAmount)) continue
+
+            // Find shop by name AND ownerId
+            const shop = await prisma.shop.findFirst({
+                where: {
+                    ownerId: session.user.id,
+                    name: {
+                        equals: String(name),
+                        mode: 'insensitive'
+                    }
+                }
+            })
+
+            if (shop) {
+                await prisma.shop.update({
+                    where: { id: shop.id },
+                    data: { dueAmount }
+                })
+                updatedCount++
+            } else {
+                missingShops.push(String(name))
+            }
+        }
+
+        revalidatePath('/owner/shops')
+        return {
+            success: true,
+            updatedCount,
+            missingShops,
+            error: undefined
+        }
+
+    } catch (e) {
+        console.error(e)
+        return { success: false, error: 'Failed to process file', updatedCount: 0, missingShops: [] as string[] }
+    }
 }
