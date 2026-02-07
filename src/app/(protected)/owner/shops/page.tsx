@@ -21,8 +21,8 @@ export default async function ShopsPage() {
                     <Link href="/owner/shops/import" className="bg-white border rounded px-3 py-1.5 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
                         📥 Import
                     </Link>
-                    <Link href="/owner/shops/bulk-update" className="bg-white border rounded px-3 py-1.5 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-                        📊 Bulk Update
+                    <Link href="/owner/shops/due-update" className="bg-white border rounded px-3 py-1.5 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                        📊 Due Update
                     </Link>
                     <ExportButton mode="ALL" />
                 </div>

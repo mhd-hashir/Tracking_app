@@ -148,8 +148,7 @@ export async function importShopsAction(prevState: any, formData: FormData) {
                             data: updateData
                         })
                     )
-                    // Store original state for revert
-                    // Only store the fields we are changing? Or full object? Full object is safer/easier.
+                    // Store complete original state for revert flexibility
                     revertMeta.push({ type: 'UPDATE', original: existingShop })
                     updatedCount++
                 }
@@ -171,8 +170,7 @@ export async function importShopsAction(prevState: any, formData: FormData) {
             }
         }
 
-        // 3. Execute all operations in a SINGLE transaction (Atomicity required for reliable Undo)
-        // If file is huge, this might hit limits, but for <5000 rows it is usually OK.
+        // 3. Execute all operations in a SINGLE transaction 
         let results: any[] = []
         if (transactionOps.length > 0) {
             results = await prisma.$transaction(transactionOps)
@@ -192,7 +190,6 @@ export async function importShopsAction(prevState: any, formData: FormData) {
         })
 
         // 5. Store Undo History
-        // We only store if changes happened
         let batchId: string | undefined = undefined
         if (createdShopIds.length > 0 || originalShops.length > 0) {
             const batch = await prisma.importBatch.create({
@@ -228,7 +225,14 @@ export async function undoImportAction(batchId: string) {
         })
 
         if (!batch || batch.ownerId !== session.user.id) {
-            return { success: false, error: 'Undo data not found' }
+            return { success: false, error: 'Undo data not found or unauthorized' }
+        }
+
+        // Check 5-minute timer
+        const now = new Date()
+        const diff = now.getTime() - batch.createdAt.getTime()
+        if (diff > 5 * 60 * 1000) {
+            return { success: false, error: 'Undo period has expired (limited to 5 minutes)' }
         }
 
         const revertData = batch.revertData as any
@@ -248,18 +252,20 @@ export async function undoImportAction(batchId: string) {
 
         // 2. Revert updated shops
         for (const shop of originalShops) {
+            // Restore all basic fields present in the snapshot
+            const dataToRestore: any = {}
+            if (shop.name !== undefined) dataToRestore.name = shop.name
+            if (shop.address !== undefined) dataToRestore.address = shop.address
+            if (shop.mobile !== undefined) dataToRestore.mobile = shop.mobile
+            if (shop.dueAmount !== undefined) dataToRestore.dueAmount = shop.dueAmount
+            if (shop.latitude !== undefined) dataToRestore.latitude = shop.latitude
+            if (shop.longitude !== undefined) dataToRestore.longitude = shop.longitude
+            if (shop.geofenceRadius !== undefined) dataToRestore.geofenceRadius = shop.geofenceRadius
+
             undoOps.push(
                 prisma.shop.update({
                     where: { id: shop.id },
-                    data: {
-                        name: shop.name,
-                        address: shop.address,
-                        mobile: shop.mobile,
-                        dueAmount: shop.dueAmount,
-                        latitude: shop.latitude, // Restore all just in case
-                        longitude: shop.longitude,
-                        geofenceRadius: shop.geofenceRadius
-                    }
+                    data: dataToRestore
                 })
             )
         }
@@ -287,7 +293,7 @@ export async function extractCoordinatesAction(urlInput: string) {
     try {
         const response = await fetch(urlInput, {
             redirect: 'follow',
-            method: 'GET', // Changed to GET to follow redirects properly
+            method: 'GET',
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
@@ -377,7 +383,7 @@ export async function getAllShopsExportData() {
     }))
 }
 
-export async function bulkUpdateShopDuesAction(prevState: any, formData: FormData) {
+export async function dueUpdateShopsAction(prevState: any, formData: FormData) {
     const session = await getSession()
     if (!session || session.user.role !== 'OWNER') return { success: false, error: 'Unauthorized', updatedCount: 0, missingShops: [] as string[] }
 
@@ -396,19 +402,19 @@ export async function bulkUpdateShopDuesAction(prevState: any, formData: FormDat
         const worksheet = workbook.Sheets[sheetName]
         const data: any[] = XLSX.utils.sheet_to_json(worksheet)
 
-        // 1. Fetch shops (Optimized)
+        // 1. Fetch shops with due amount (Optimized)
         const existingShops = await prisma.shop.findMany({
-            where: { ownerId: session.user.id },
-            select: { id: true, name: true }
+            where: { ownerId: session.user.id }
         })
 
         // 2. Map
-        const shopMap = new Map<string, string>()
+        const shopMap = new Map<string, any>()
         existingShops.forEach(shop => {
-            if (shop.name) shopMap.set(shop.name.toLowerCase().trim(), shop.id)
+            if (shop.name) shopMap.set(shop.name.toLowerCase().trim(), shop)
         })
 
         const transactionOps: any[] = []
+        const revertMeta: any[] = []
         let updatedCount = 0
         const missingShops: string[] = []
 
@@ -420,33 +426,46 @@ export async function bulkUpdateShopDuesAction(prevState: any, formData: FormDat
             const lowerName = name.toLowerCase()
 
             let dueRaw = row['Due Amount'] || row['Due'] || row['due amount'] || row['due']
-            if (dueRaw === undefined) continue  // If no due amount, skip in this specific "Bulk Due Update" action
+            if (dueRaw === undefined) continue
 
             const dueAmount = parseFloat(dueRaw)
             if (isNaN(dueAmount)) continue
 
-            const shopId = shopMap.get(lowerName)
+            const shop = shopMap.get(lowerName)
 
-            if (shopId) {
+            if (shop) {
                 transactionOps.push(
                     prisma.shop.update({
-                        where: { id: shopId },
+                        where: { id: shop.id },
                         data: { dueAmount }
                     })
                 )
+                revertMeta.push({ type: 'UPDATE', original: shop })
                 updatedCount++
             } else {
                 missingShops.push(name)
             }
         }
 
+        let batchId: string | undefined = undefined
+
         // 3. Batch Execute
         if (transactionOps.length > 0) {
-            const BATCH_SIZE = 100
-            for (let i = 0; i < transactionOps.length; i += BATCH_SIZE) {
-                const batch = transactionOps.slice(i, i + BATCH_SIZE)
-                await prisma.$transaction(batch)
-            }
+            await prisma.$transaction(transactionOps)
+
+            // 4. Save Undo
+            const batch = await prisma.importBatch.create({
+                data: {
+                    ownerId: session.user.id,
+                    createdCount: 0,
+                    updatedCount: updatedCount,
+                    revertData: {
+                        createdShopIds: [],
+                        originalShops: revertMeta.map(m => m.original)
+                    }
+                }
+            })
+            batchId = batch.id
         }
 
         revalidatePath('/owner/shops')
@@ -454,6 +473,7 @@ export async function bulkUpdateShopDuesAction(prevState: any, formData: FormDat
             success: true,
             updatedCount,
             missingShops,
+            batchId,
             error: undefined
         }
 
