@@ -30,6 +30,12 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
         email: employee.email
     }
 
+    const owner = await prisma.user.findUnique({
+        where: { id: session.user.id }
+    })
+
+    const displayDomain = owner?.ownedDomain || settings.defaultDomain
+
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
@@ -43,7 +49,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
                     initialData={initialData}
                     submitLabel="Save Changes"
                     deleteAction={deleteEmployeeAction}
-                    defaultDomain={settings.defaultDomain}
+                    defaultDomain={displayDomain}
                 />
             </div>
         </div>

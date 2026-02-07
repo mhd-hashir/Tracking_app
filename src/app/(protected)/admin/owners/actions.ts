@@ -13,7 +13,7 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string
     const username = formData.get('username') as string
-    const domain = formData.get('domain') as string
+    const domain = (formData.get('domain') as string)?.trim()
     const password = formData.get('password') as string
 
     if (!username || !domain || !password || !name) {
