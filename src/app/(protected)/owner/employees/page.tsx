@@ -16,6 +16,12 @@ export default async function EmployeesPage() {
         orderBy: { createdAt: 'desc' }
     })
 
+    const owner = await prisma.user.findUnique({
+        where: { id: session.user.id }
+    })
+
+    const displayDomain = owner?.ownedDomain || settings.defaultDomain
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -26,7 +32,7 @@ export default async function EmployeesPage() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">Add New Employee</h3>
                     <div className="p-4 border rounded-lg bg-white shadow-sm">
-                        <AddEmployeeForm defaultDomain={settings.defaultDomain} />
+                        <AddEmployeeForm defaultDomain={displayDomain} />
                     </div>
                 </div>
 
