@@ -97,8 +97,13 @@ export function EmployeeForm({ action, initialData, submitLabel, deleteAction, d
                         <p>Once you delete an employee, there is no going back. Please be certain.</p>
                     </div>
                     <form action={async (formData) => {
-                        if (confirm("Are you sure you want to delete this employee?")) {
-                            await deleteAction(formData)
+                        const password = prompt("Please enter your password to confirm deletion:")
+                        if (password) {
+                            formData.append('password', password)
+                            const result = await deleteAction(formData)
+                            if (result?.error) {
+                                alert(result.error)
+                            }
                         }
                     }}>
                         <input type="hidden" name="employeeId" value={initialData.id} />

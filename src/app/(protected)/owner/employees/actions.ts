@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/db'
-import { getSession, hashPassword } from '@/lib/auth'
+import { getSession, hashPassword, verifyPassword } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 import { getGlobalSettings } from '../../admin/settings/actions'
@@ -114,14 +114,27 @@ export async function updateEmployeeAction(prevState: any, formData: FormData) {
     }
 }
 
+
 export async function deleteEmployeeAction(formData: FormData) {
     const session = await getSession()
     if (!session || session.user.role !== 'OWNER') return { error: 'Unauthorized' }
 
     const employeeId = formData.get('employeeId') as string
+    const password = formData.get('password') as string
+
+    if (!password) return { error: 'Password required' }
 
     try {
-        // Verify ownership before delete
+        // Verify Owner Password
+        const owner = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        })
+
+        if (!owner || !await verifyPassword(password, owner.password)) {
+            return { error: 'Invalid Password' }
+        }
+
+        // Verify ownership of employee before delete
         const emp = await prisma.user.findFirst({
             where: { id: employeeId, ownerId: session.user.id }
         })
