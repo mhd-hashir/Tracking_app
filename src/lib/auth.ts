@@ -32,10 +32,23 @@ export async function verifyPassword(password: string, hash: string) {
     return await bcrypt.compare(password, hash)
 }
 
+import { prisma } from '@/lib/db'
+
 export async function getSession() {
     const session = (await cookies()).get('session')?.value
     if (!session) return null
-    return await decrypt(session)
+
+    const payload = await decrypt(session)
+    if (!payload?.user?.id) return null
+
+    // DB Verification: Check if user still exists
+    const user = await prisma.user.findUnique({
+        where: { id: payload.user.id }
+    })
+
+    if (!user) return null // User deleted, invalidate session logic
+
+    return payload
 }
 
 export async function updateSession() {
