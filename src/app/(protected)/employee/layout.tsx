@@ -1,7 +1,7 @@
 import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LocationTracker } from './location-tracker'
+import { DutyTracker } from './duty-tracker'
 import { prisma } from '@/lib/db'
 
 export default async function EmployeeLayout({
@@ -41,7 +41,7 @@ export default async function EmployeeLayout({
             <main className="flex-1 container mx-auto p-4 pb-20">
                 {children}
             </main>
-            <LocationTracker initialStatus={!!user?.isOnDuty} />
+            <DutyTracker initialStatus={!!user?.isOnDuty} />
         </div>
     )
 }
