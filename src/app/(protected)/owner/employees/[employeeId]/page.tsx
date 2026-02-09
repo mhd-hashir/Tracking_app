@@ -47,12 +47,18 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
         where: { assignedToId: employee.id }
     })
 
-    // Fetch Duty Logs
-    const logs = await prisma.dutyLog.findMany({
-        where: { employeeId: employee.id },
-        orderBy: { timestamp: 'desc' },
-        take: 50 // Limit to last 50
-    })
+    // Fetch Duty Logs (Handle DB Schema Mismatch Gracefully)
+    let logs: any[] = []
+    try {
+        logs = await prisma.dutyLog.findMany({
+            where: { employeeId: employee.id },
+            orderBy: { timestamp: 'desc' },
+            take: 50 // Limit to last 50
+        })
+    } catch (e) {
+        console.error("Failed to fetch duty logs (Schema mismatch?):", e)
+        // Keep logs empty if table doesn't exist
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-12">
