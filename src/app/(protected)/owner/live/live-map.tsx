@@ -39,6 +39,13 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
             {employees.map((emp, idx) => {
                 if (!emp.lastLatitude || !emp.lastLongitude) return null
 
+                const isOnDuty = emp.isOnDuty
+                const mainColor = isOnDuty ? '#6366f1' : '#9ca3af' // Indigo-500 : Gray-400
+                const darkColor = isOnDuty ? '#4338ca' : '#4b5563' // Indigo-700 : Gray-600
+                const dotColor = isOnDuty ? '#4f46e5' : '#6b7280' // Indigo-600 : Gray-500
+                const animation = isOnDuty ? 'pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite' : 'none'
+                const ringOpacity = isOnDuty ? 0.6 : 0
+
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
                     html: `
@@ -56,14 +63,14 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
                                 font-weight: 700; 
                                 font-size: 13px; 
-                                border: 2px solid #6366f1;
-                                color: #4338ca;
+                                border: 2px solid ${mainColor};
+                                color: ${darkColor};
                                 white-space: nowrap;
                                 margin-bottom: 8px;
                                 position: relative;
                                 z-index: 10;
                             ">
-                                ${emp.name}
+                                ${emp.name} ${!isOnDuty ? '<span style="font-weight:400; font-size:10px; opacity: 0.8">(Off)</span>' : ''}
                             </div>
                             <div style="position: relative; width: 24px; height: 24px;">
                                 <div style="
@@ -71,9 +78,9 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                                     width: 100%;
                                     height: 100%;
                                     border-radius: 50%;
-                                    background-color: #6366f1;
-                                    opacity: 0.6;
-                                    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                                    background-color: ${mainColor};
+                                    opacity: ${ringOpacity};
+                                    animation: ${animation};
                                 "></div>
                                 <div style="
                                     position: absolute;
@@ -82,7 +89,7 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                                     transform: translate(-50%, -50%);
                                     width: 12px; 
                                     height: 12px; 
-                                    background-color: #4f46e5; 
+                                    background-color: ${dotColor}; 
                                     border: 2px solid white; 
                                     border-radius: 50%; 
                                     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -101,9 +108,12 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                         icon={customIcon}
                     >
                         <Popup>
-                            <div className="text-sm font-bold text-indigo-700">{emp.name}</div>
+                            <div className={`text-sm font-bold ${isOnDuty ? 'text-indigo-700' : 'text-gray-600'}`}>{emp.name}</div>
                             <div className="text-xs text-gray-500">
-                                Last Active: {new Date(emp.lastActive).toLocaleTimeString()}
+                                {isOnDuty ? '🟢 On Duty' : '⚪ Off Duty'}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                                Last Active: {emp.lastLocationUpdate ? new Date(emp.lastLocationUpdate).toLocaleTimeString() : 'Unknown'}
                             </div>
                         </Popup>
                     </Marker>

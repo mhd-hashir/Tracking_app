@@ -36,6 +36,7 @@ model User {
   lastLatitude  Float?
   lastLongitude Float?
   lastLocationUpdate DateTime?
+  isOnDuty      Boolean  @default(false)
   
   locationHistory LocationHistory[]
 }

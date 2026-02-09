@@ -17,7 +17,8 @@ export default async function LiveDashboardPage() {
             email: true,
             lastLatitude: true,
             lastLongitude: true,
-            lastLocationUpdate: true
+            lastLocationUpdate: true,
+            isOnDuty: true
         }
     })
 

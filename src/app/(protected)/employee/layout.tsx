@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LocationTracker } from './location-tracker'
+import { prisma } from '@/lib/db'
 
 export default async function EmployeeLayout({
     children,
@@ -13,6 +14,11 @@ export default async function EmployeeLayout({
     if (!session || session.user.role !== 'EMPLOYEE') {
         redirect('/login')
     }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { isOnDuty: true }
+    })
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
@@ -27,7 +33,7 @@ export default async function EmployeeLayout({
                             await logout()
                             redirect('/login')
                         }}>
-                            <button className="bg-indigo-700 px-2 py-1 rounded text-xs">Deslogar</button>
+                            <button className="bg-indigo-700 px-2 py-1 rounded text-xs hover:bg-indigo-800 transition">Logout</button>
                         </form>
                     </div>
                 </div>
@@ -35,7 +41,7 @@ export default async function EmployeeLayout({
             <main className="flex-1 container mx-auto p-4 pb-20">
                 {children}
             </main>
-            <LocationTracker />
+            <LocationTracker initialStatus={!!user?.isOnDuty} />
         </div>
     )
 }
