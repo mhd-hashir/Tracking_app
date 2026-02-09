@@ -45,19 +45,30 @@ export async function updateLocationAction(latitude: number, longitude: number) 
     }
 }
 
-export async function toggleDutyAction(isOnDuty: boolean) {
+export async function toggleDutyAction(isOnDuty: boolean, latitude?: number, longitude?: number) {
     const session = await getSession()
     if (!session || session.user.role !== 'EMPLOYEE') return { error: 'Unauthorized' }
 
     try {
-        await prisma.user.update({
-            where: { id: session.user.id },
-            data: { isOnDuty }
-        })
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: session.user.id },
+                data: { isOnDuty }
+            }),
+            prisma.dutyLog.create({
+                data: {
+                    employeeId: session.user.id,
+                    status: isOnDuty ? 'ON' : 'OFF',
+                    latitude,
+                    longitude
+                }
+            })
+        ])
 
         revalidatePath('/employee')
         return { success: true }
     } catch (error) {
+        console.error('Failed to toggle duty:', error)
         return { error: 'Failed to toggle duty status' }
     }
 }

@@ -39,6 +39,7 @@ model User {
   isOnDuty      Boolean  @default(false)
   
   locationHistory LocationHistory[]
+  dutyLogs        DutyLog[]
 }
 
 model LocationHistory {
@@ -142,4 +143,16 @@ model ImportBatch {
   revertData Json 
 
   @@index([ownerId])
+}
+
+model DutyLog {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  status     String   // "ON", "OFF"
+  latitude   Float?
+  longitude  Float?
+  timestamp  DateTime @default(now())
+
+  @@index([employeeId])
 }

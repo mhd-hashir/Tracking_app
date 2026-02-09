@@ -46,13 +46,39 @@ export function DutyTracker({ initialStatus }: { initialStatus: boolean }) {
     }, [isOnDuty])
 
     const handleToggle = async () => {
-        const newState = !isOnDuty
-        setIsOnDuty(newState)
-        const res = await toggleDutyAction(newState)
-        if (res?.error) {
-            alert(res.error)
-            setIsOnDuty(!newState) // Revert if failed
-        }
+        setStatus('Updating status...')
+
+        // Try to get location for the log
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords
+                const newState = !isOnDuty
+                setIsOnDuty(newState)
+
+                const res = await toggleDutyAction(newState, latitude, longitude)
+                if (res?.error) {
+                    alert(res.error)
+                    setIsOnDuty(!newState)
+                } else {
+                    setStatus(newState ? 'Active' : 'Tracking Paused')
+                }
+            },
+            async (error) => {
+                console.error('Location failed for toggle:', error)
+                // Proceed without location if GPS fails (e.g. signal loss when turning off)
+                const newState = !isOnDuty
+                setIsOnDuty(newState)
+
+                const res = await toggleDutyAction(newState)
+                if (res?.error) {
+                    alert(res.error)
+                    setIsOnDuty(!newState)
+                } else {
+                    setStatus(newState ? 'Active (No GPS Log)' : 'Tracking Paused')
+                }
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+        )
     }
 
     return (
