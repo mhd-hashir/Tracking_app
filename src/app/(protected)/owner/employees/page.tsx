@@ -40,34 +40,39 @@ export default async function EmployeesPage({ searchParams }: Props) {
     const displayDomain = owner?.ownedDomain || settings.defaultDomain
 
     // Build Filters
-    const nameFilter = typeof params.name === 'string' ? params.name : undefined
+    const employeeIdFilter = typeof params.employeeId === 'string' ? params.employeeId : undefined
     const statusFilter = typeof params.status === 'string' ? params.status : undefined
-    const dateFilter = typeof params.date === 'string' ? params.date : undefined
+    const fromDate = typeof params.from === 'string' ? params.from : undefined
+    const toDate = typeof params.to === 'string' ? params.to : undefined
 
     const where: any = {
-        employee: { ownerId: session.user.id }
+        employee: { ownerId: session.user.id } // Base filter: only my employees
     }
 
-    if (nameFilter) {
-        where.employee.name = { contains: nameFilter, mode: 'insensitive' }
+    if (employeeIdFilter) {
+        where.employeeId = employeeIdFilter
     }
 
     if (statusFilter) {
         where.status = statusFilter
     }
 
-    if (dateFilter) {
-        // Simple date filtering (UTC based)
-        // input[type=date] returns YYYY-MM-DD
-        const startDate = new Date(dateFilter)
-        // Ifinvalid date, ignore
-        if (!isNaN(startDate.getTime())) {
-            const endDate = new Date(startDate)
-            endDate.setDate(endDate.getDate() + 1)
+    if (fromDate || toDate) {
+        where.timestamp = {}
 
-            where.timestamp = {
-                gte: startDate,
-                lt: endDate
+        if (fromDate) {
+            const start = new Date(fromDate)
+            if (!isNaN(start.getTime())) {
+                where.timestamp.gte = start
+            }
+        }
+
+        if (toDate) {
+            const end = new Date(toDate)
+            if (!isNaN(end.getTime())) {
+                // Include the full "To" day by going to start of next day
+                end.setDate(end.getDate() + 1)
+                where.timestamp.lt = end
             }
         }
     }
@@ -79,7 +84,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
             where,
             include: { employee: { select: { name: true } } },
             orderBy: { timestamp: 'desc' },
-            take: 100 // Increased limit for filtered view
+            take: 200 // Increased limit for filtered view
         })
     } catch (e) {
         console.warn("DutyLog table missing or error:", e)
@@ -151,11 +156,11 @@ export default async function EmployeesPage({ searchParams }: Props) {
                     Recent Activity Logs
                 </h3>
 
-                <DutyLogFilters />
+                <DutyLogFilters employees={employees} />
 
                 <AllDutyLogs logs={logs} />
-                {logs.length === 100 && (
-                    <p className="text-xs text-center text-gray-400 mt-2">Showing last 100 results. Refine filters to see more.</p>
+                {logs.length === 200 && (
+                    <p className="text-xs text-center text-gray-400 mt-2">Showing last 200 results. Refine filters to see more.</p>
                 )}
             </div>
         </div>
