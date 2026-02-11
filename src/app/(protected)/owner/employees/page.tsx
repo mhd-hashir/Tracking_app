@@ -45,6 +45,24 @@ export default async function EmployeesPage({ searchParams }: Props) {
     const fromDate = typeof params.from === 'string' ? params.from : undefined
     const toDate = typeof params.to === 'string' ? params.to : undefined
 
+    // Fetch Unique Employees from Logs for Filter
+    let filterOptions: Array<{ id: string, name: string | null }> = []
+    try {
+        const uniqueLogEmployees = await prisma.dutyLog.findMany({
+            where: { employee: { ownerId: session.user.id } },
+            distinct: ['employeeId'],
+            select: {
+                employee: {
+                    select: { id: true, name: true }
+                }
+            }
+        })
+        filterOptions = uniqueLogEmployees.map(log => log.employee)
+    } catch (e) {
+        // Fallback to all employees if logs query fails
+        filterOptions = employees.map(e => ({ id: e.id, name: e.name }))
+    }
+
     const where: any = {
         employee: { ownerId: session.user.id } // Base filter: only my employees
     }
@@ -156,7 +174,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
                     Recent Activity Logs
                 </h3>
 
-                <DutyLogFilters employees={employees} />
+                <DutyLogFilters employees={filterOptions} />
 
                 <AllDutyLogs logs={logs} />
                 {logs.length === 200 && (
