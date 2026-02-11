@@ -210,3 +210,53 @@ export async function updateEmployeeRoutesAction(prevState: any, formData: FormD
         return { error: 'Failed to update routes' }
     }
 }
+
+export async function exportDutyLogsAction(filters: {
+    employeeId?: string
+    status?: string
+    from?: string
+    to?: string
+}) {
+    const session = await getSession()
+    if (!session || session.user.role !== 'OWNER') {
+        throw new Error('Unauthorized')
+    }
+
+    const { employeeId, status, from, to } = filters
+    const where: any = {
+        employee: { ownerId: session.user.id }
+    }
+
+    if (employeeId) where.employeeId = employeeId
+    if (status) where.status = status
+
+    if (from || to) {
+        where.timestamp = {}
+        if (from) {
+            const start = new Date(from)
+            if (!isNaN(start.getTime())) where.timestamp.gte = start
+        }
+        if (to) {
+            const end = new Date(to)
+            if (!isNaN(end.getTime())) {
+                end.setDate(end.getDate() + 1)
+                where.timestamp.lt = end
+            }
+        }
+    }
+
+    const logs = await prisma.dutyLog.findMany({
+        where,
+        include: { employee: { select: { name: true, email: true } } },
+        orderBy: { timestamp: 'desc' }
+    })
+
+    return logs.map(log => ({
+        Employee: log.employee.name || 'Unknown',
+        Email: log.employee.email,
+        Status: log.status === 'ON' ? 'On Duty' : 'Off Duty',
+        Time: log.timestamp.toISOString(), // Client can format this better if needed, or leave as ISO
+        Latitude: log.latitude,
+        Longitude: log.longitude
+    }))
+}

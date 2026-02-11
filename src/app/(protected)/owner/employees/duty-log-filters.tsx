@@ -1,7 +1,9 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useTransition } from 'react'
+import { exportDutyLogsAction } from './actions'
+import * as XLSX from 'xlsx'
 
 interface DutyLogFiltersProps {
     employees: { id: string; name: string | null }[]
@@ -11,6 +13,7 @@ export function DutyLogFilters({ employees }: DutyLogFiltersProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const [isExporting, startTransition] = useTransition()
 
     const createQueryString = useCallback(
         (name: string, value: string) => {
@@ -27,6 +30,29 @@ export function DutyLogFilters({ employees }: DutyLogFiltersProps) {
 
     const handleFilterChange = (key: string, value: string) => {
         router.push(pathname + '?' + createQueryString(key, value))
+    }
+
+    const handleExport = () => {
+        startTransition(async () => {
+            try {
+                const filters = {
+                    employeeId: searchParams.get('employeeId') || undefined,
+                    status: searchParams.get('status') || undefined,
+                    from: searchParams.get('from') || undefined,
+                    to: searchParams.get('to') || undefined,
+                }
+
+                const data = await exportDutyLogsAction(filters)
+
+                const worksheet = XLSX.utils.json_to_sheet(data)
+                const workbook = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Duty Logs")
+                XLSX.writeFile(workbook, "DutyLogs.xlsx")
+            } catch (error) {
+                console.error("Export failed:", error)
+                alert("Failed to export logs. Please try again.")
+            }
+        })
     }
 
     return (
@@ -80,14 +106,24 @@ export function DutyLogFilters({ employees }: DutyLogFiltersProps) {
                 </select>
             </div>
 
-            {(searchParams.get('employeeId') || searchParams.get('from') || searchParams.get('to') || searchParams.get('status')) && (
+            <div className="flex gap-4 items-center ml-auto">
+                {(searchParams.get('employeeId') || searchParams.get('from') || searchParams.get('to') || searchParams.get('status')) && (
+                    <button
+                        onClick={() => router.push(pathname)}
+                        className="text-sm text-red-600 hover:text-red-800 underline"
+                    >
+                        Clear Filters
+                    </button>
+                )}
+
                 <button
-                    onClick={() => router.push(pathname)}
-                    className="text-sm text-red-600 hover:text-red-800 underline self-center mt-4 md:mt-0"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Clear Filters
+                    {isExporting ? 'Exporting...' : 'Export to Excel'}
                 </button>
-            )}
+            </div>
         </div>
     )
 }
