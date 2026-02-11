@@ -1,14 +1,14 @@
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyMobileToken } from '../../utils';
+import { prisma } from '@/lib/db';
+import { verifyToken } from '../../utils';
 import bcrypt from 'bcryptjs';
 
 // GET: List all owners
 export async function GET(req: Request) {
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -18,8 +18,7 @@ export async function GET(req: Request) {
                 id: true,
                 name: true,
                 email: true,
-                mobile: true,
-                isActive: true,
+                subscriptionStatus: true,
                 createdAt: true,
                 _count: {
                     select: {
@@ -42,13 +41,13 @@ export async function GET(req: Request) {
 // POST: Create a new owner
 export async function POST(req: Request) {
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await req.json();
-        const { name, email, password, mobile } = body;
+        const { name, email, password } = body;
 
         if (!name || !email || !password) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -66,9 +65,8 @@ export async function POST(req: Request) {
                 name,
                 email,
                 password: hashedPassword,
-                mobile,
                 role: 'OWNER',
-                isActive: true
+                subscriptionStatus: 'ACTIVE'
             },
             select: {
                 id: true,

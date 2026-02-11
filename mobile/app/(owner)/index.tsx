@@ -4,7 +4,7 @@ import { StyleSheet, View, Text, ScrollView, ActivityIndicator, TouchableOpacity
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter } from 'expo-router';
-import { Users, DollarSign, MapPin, ShoppingBag, Route as RouteIcon, PlusSquare, Map, UserPlus, User as UserIcon } from 'lucide-react-native';
+import { Users, DollarSign, MapPin, ShoppingBag, Route as RouteIcon, PlusSquare, Map, UserPlus, User as UserIcon, FileText } from 'lucide-react-native';
 
 interface DashboardStats {
     activeEmployees: number;
@@ -111,6 +111,13 @@ export default function OwnerDashboard() {
                             <Users color="#ea580c" size={28} />
                         </View>
                         <Text style={styles.menuTitle}>Employees</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(owner)/data')}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#f0f9ff' }]}>
+                            <FileText color="#0ea5e9" size={28} />
+                        </View>
+                        <Text style={styles.menuTitle}>Reports</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(owner)/map')}>

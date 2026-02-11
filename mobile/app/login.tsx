@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         marginBottom: 16,
         paddingHorizontal: 16,
-        paddingVertical: 12,
         height: 56,
     },
     inputIcon: {
@@ -133,6 +132,8 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         color: '#334155',
+        height: '100%',
+        textAlignVertical: 'center', // Android fix
     },
     button: {
         backgroundColor: '#4f46e5',

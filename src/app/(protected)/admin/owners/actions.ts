@@ -1,9 +1,11 @@
 'use server'
 
 import { prisma } from '@/lib/db'
-import { getSession, hashPassword, verifyPassword } from '@/lib/auth'
+import { getSession, hashPassword, verifyPassword, encrypt } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { getGlobalSettings } from '../settings/actions'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 export async function createOwnerAction(prevState: any, formData: FormData) {
     const session = await getSession()
@@ -15,6 +17,10 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
     const username = formData.get('username') as string
     const domain = (formData.get('domain') as string)?.trim()
     const password = formData.get('password') as string
+
+    const planType = formData.get('planType') as string || 'FREE'
+    const subscriptionStatus = formData.get('subscriptionStatus') as string || 'ACTIVE'
+    const subscriptionExpiry = formData.get('subscriptionExpiry') as string
 
     if (!username || !domain || !password || !name) {
         return { error: 'All fields are required' }
@@ -36,7 +42,10 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
                 email,
                 password: hashedPassword,
                 role: 'OWNER',
-                ownedDomain: domain, // Store the custom domain
+                ownedDomain: domain,
+                planType,
+                subscriptionStatus,
+                subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null
             },
         })
 
@@ -58,12 +67,19 @@ export async function updateOwnerAction(prevState: any, formData: FormData) {
     const domain = formData.get('domain') as string
     const password = formData.get('password') as string
 
+    const planType = formData.get('planType') as string
+    const subscriptionStatus = formData.get('subscriptionStatus') as string
+    const subscriptionExpiry = formData.get('subscriptionExpiry') as string
+
     if (!name || !email) return { error: 'All fields are required' }
 
     const data: any = {
         name,
         email,
-        ownedDomain: domain && domain.trim() !== '' ? domain : null
+        ownedDomain: domain && domain.trim() !== '' ? domain : null,
+        planType,
+        subscriptionStatus,
+        subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null
     }
 
     if (password && password.trim() !== '') {
@@ -154,4 +170,41 @@ export async function deleteEmployeeByAdminAction(formData: FormData) {
     } catch (e) {
         return { error: 'Failed to delete employee' }
     }
+}
+
+export async function masqueradeAsOwner(ownerId: string) {
+    const session = await getSession()
+    if (!session || session.user.role !== 'ADMIN') {
+        throw new Error('Unauthorized')
+    }
+
+    const owner = await prisma.user.findUnique({
+        where: { id: ownerId, role: 'OWNER' }
+    })
+
+    if (!owner) {
+        throw new Error('Owner not found')
+    }
+
+    // Create session for the owner
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const newSession = await encrypt({
+        user: {
+            id: owner.id,
+            email: owner.email,
+            role: owner.role,
+            name: owner.name
+        }
+    })
+
+    const cookieStore = await cookies()
+    cookieStore.set('session', newSession, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires,
+        sameSite: 'lax',
+        path: '/'
+    })
+
+    redirect('/owner')
 }

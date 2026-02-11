@@ -9,6 +9,8 @@ export default function AdminLayout() {
             <Stack.Screen name="owners" />
             <Stack.Screen name="add-owner" />
             <Stack.Screen name="owner/[id]" />
+            <Stack.Screen name="logs" />
+            <Stack.Screen name="broadcasts" />
         </Stack>
     );
 }

@@ -5,7 +5,8 @@ import { Stack, useRouter } from 'expo-router';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
-import { MapPin, Save } from 'lucide-react-native';
+import { MapPin, Save, Navigation } from 'lucide-react-native';
+import LocationPicker from '../../components/LocationPicker';
 
 export default function AddShopScreen() {
     const router = useRouter();
@@ -16,6 +17,7 @@ export default function AddShopScreen() {
 
     const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
     const [gettingLocation, setGettingLocation] = useState(false);
+    const [showPicker, setShowPicker] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const handleGetLocation = async () => {
@@ -118,22 +120,39 @@ export default function AddShopScreen() {
                 />
 
                 <Text style={styles.label}>Location</Text>
-                <TouchableOpacity
-                    style={styles.locationButton}
-                    onPress={handleGetLocation}
-                    disabled={gettingLocation}
-                >
-                    {gettingLocation ? <ActivityIndicator color="#4f46e5" /> : (
-                        <>
-                            <MapPin size={20} color="#4f46e5" />
-                            <Text style={styles.locationText}>
-                                {location
-                                    ? `Lat: ${location.lat.toFixed(4)}, Lng: ${location.lng.toFixed(4)}`
-                                    : 'Use Current Location'}
-                            </Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+
+                {/* Location Picker Modal */}
+                <LocationPicker
+                    visible={showPicker}
+                    initialLocation={location}
+                    onClose={() => setShowPicker(false)}
+                    onSelect={(loc) => {
+                        setLocation(loc);
+                        setShowPicker(false);
+                    }}
+                />
+
+                <View style={styles.locationContainer}>
+                    <TouchableOpacity
+                        style={styles.locationButton}
+                        onPress={() => setShowPicker(true)}
+                    >
+                        <MapPin size={20} color="#4f46e5" />
+                        <Text style={styles.locationText}>
+                            {location
+                                ? `Selected: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+                                : 'Select on Map'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.gpsButton}
+                        onPress={handleGetLocation}
+                        disabled={gettingLocation}
+                    >
+                        {gettingLocation ? <ActivityIndicator color="#4f46e5" /> : <Navigation size={20} color="#4f46e5" />}
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                     style={[styles.submitButton, submitting && styles.disabledButton]}
@@ -176,7 +195,9 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         color: '#333',
     },
+    locationContainer: { flexDirection: 'row', gap: 10 },
     locationButton: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -187,6 +208,15 @@ const styles = StyleSheet.create({
         borderColor: '#c7d2fe',
         borderStyle: 'dashed',
         gap: 8,
+    },
+    gpsButton: {
+        width: 56,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f9ff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#bae6fd',
     },
     locationText: {
         color: '#4f46e5',

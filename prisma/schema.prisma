@@ -40,6 +40,11 @@ model User {
   
   locationHistory LocationHistory[]
   dutyLogs        DutyLog[]
+  
+  // Subscription Fields (for Owners)
+  planType        String   @default("FREE") // FREE, PRO, ENTERPRISE
+  subscriptionStatus String @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  subscriptionExpiry DateTime? 
 }
 
 model LocationHistory {
@@ -141,7 +146,7 @@ model ImportBatch {
   // JSON blob to store revert instructions
   // Structure: { createdShopIds: string[], originalShops: Partial<Shop>[] }
   revertData Json 
-
+  
   @@index([ownerId])
 }
 
@@ -155,4 +160,22 @@ model DutyLog {
   timestamp  DateTime @default(now())
 
   @@index([employeeId])
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   // INFO, WARN, ERROR
+  message   String
+  metadata  Json?
+  userId    String?  // Optional: User who triggered it
+  createdAt DateTime @default(now())
+}
+
+model Broadcast {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
 }

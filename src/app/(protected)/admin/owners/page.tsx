@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { CreateOwnerForm } from './create-owner-form'
+import { masqueradeAsOwner } from './actions'
 import { getGlobalSettings } from '../settings/actions'
 
 export default async function OwnersPage() {
@@ -58,7 +59,14 @@ export default async function OwnersPage() {
                                             {new Date(owner.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href={`/admin/owners/${owner.id}`} className="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                            <div className="flex justify-end gap-2 items-center">
+                                                <a href={`/admin/owners/${owner.id}`} className="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                                <form action={masqueradeAsOwner.bind(null, owner.id)}>
+                                                    <button type="submit" className="text-sm text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded">
+                                                        Login as Owner
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

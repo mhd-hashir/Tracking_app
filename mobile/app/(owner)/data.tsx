@@ -6,6 +6,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Calendar, Filter, FileText, Download } from 'lucide-react-native';
 
 export default function DataScreen() {
@@ -87,6 +89,38 @@ export default function DataScreen() {
         }
     };
 
+    const exportToCSV = async () => {
+        if (!report || !report.data || report.data.length === 0) {
+            Alert.alert('No Data', 'Generate a report first.');
+            return;
+        }
+
+        try {
+            // 1. Create CSV String
+            const header = 'Date,Time,Shop,Collected By,Amount,Mode\n';
+            const rows = report.data.map((item: any) =>
+                `${item.date},${item.time},"${item.shopName}","${item.collectedBy}",${item.amount},${item.paymentMode}`
+            ).join('\n');
+            const csvContent = header + rows;
+
+            // 2. Write to File
+            const fileUri = FileSystem.documentDirectory + 'report.csv';
+            await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+                encoding: FileSystem.EncodingType.UTF8
+            });
+
+            // 3. Share
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri);
+            } else {
+                Alert.alert('Error', 'Sharing is not available on this device');
+            }
+
+        } catch (error: any) {
+            Alert.alert('Export Error', error.message || 'Failed to export');
+        }
+    };
+
     const formatDate = (date: Date) => date.toLocaleDateString();
 
     return (
@@ -141,7 +175,8 @@ export default function DataScreen() {
                         <Picker
                             selectedValue={selectedShop}
                             onValueChange={(itemValue) => setSelectedShop(itemValue)}
-                            style={styles.picker}
+                            style={[styles.picker, { color: '#000' }]}
+                            dropdownIconColor="#000"
                         >
                             <Picker.Item label="All Shops" value="ALL" />
                             {shops.map(shop => (
@@ -157,7 +192,8 @@ export default function DataScreen() {
                         <Picker
                             selectedValue={selectedEmployee}
                             onValueChange={(itemValue) => setSelectedEmployee(itemValue)}
-                            style={styles.picker}
+                            style={[styles.picker, { color: '#000' }]}
+                            dropdownIconColor="#000"
                         >
                             <Picker.Item label="All Employees" value="ALL" />
                             {employees.map(emp => (
@@ -173,7 +209,8 @@ export default function DataScreen() {
                         <Picker
                             selectedValue={selectedPaymentMode}
                             onValueChange={(itemValue) => setSelectedPaymentMode(itemValue)}
-                            style={styles.picker}
+                            style={[styles.picker, { color: '#000' }]}
+                            dropdownIconColor="#000"
                         >
                             <Picker.Item label="All Modes" value="ALL" />
                             <Picker.Item label="Cash" value="CASH" />
@@ -191,6 +228,14 @@ export default function DataScreen() {
 
             {report && (
                 <View style={{ paddingBottom: 40 }}>
+                    <View style={styles.headerRow}>
+                        <Text style={styles.sectionTitle}>Results</Text>
+                        <TouchableOpacity onPress={exportToCSV} style={styles.exportBtn}>
+                            <Download size={16} color="#4f46e5" />
+                            <Text style={styles.exportText}>Export CSV</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <View style={styles.statsRow}>
                         <View style={[styles.statCard, { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }]}>
                             <Text style={[styles.statLabel, { color: '#16a34a' }]}>Collected</Text>
@@ -241,6 +286,10 @@ const styles = StyleSheet.create({
     picker: { height: 50, width: '100%' },
     genButton: { backgroundColor: '#4f46e5', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 8, shadowColor: '#4f46e5', shadowOpacity: 0.3, shadowRadius: 5 },
     genBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, backgroundColor: '#eef2ff', borderRadius: 8 },
+    exportText: { color: '#4f46e5', fontWeight: '600', fontSize: 12 },
 
     statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
     statCard: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, alignItems: 'center' },

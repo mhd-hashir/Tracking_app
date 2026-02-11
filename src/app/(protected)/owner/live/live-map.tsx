@@ -19,15 +19,28 @@ interface LiveMapProps {
     employees: any[]
     historyPaths: { [employeeId: string]: [number, number][] }
     collectionPoints: any[]
+    shops: any[]
 }
 
-export default function LiveMap({ employees, historyPaths, collectionPoints }: LiveMapProps) {
+export default function LiveMap({ employees, historyPaths, collectionPoints, shops }: LiveMapProps) {
     // Default center
     const defaultCenter: [number, number] = employees.length > 0 && employees[0].lastLatitude
         ? [employees[0].lastLatitude, employees[0].lastLongitude]
-        : [20.5937, 78.9629]
+        : (shops.length > 0 && shops[0].latitude) ? [shops[0].latitude, shops[0].longitude] : [20.5937, 78.9629]
 
     const colors = ['blue', 'red', 'green', 'purple', 'orange']
+
+    // Custom Shop Icon
+    const shopIcon = L.divIcon({
+        className: 'custom-shop-marker',
+        html: `
+            <div style="background-color: #7c3aed; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/></svg>
+            </div>
+        `,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    })
 
     return (
         <MapContainer center={defaultCenter} zoom={5} style={{ height: '100%', width: '100%' }}>
@@ -35,6 +48,28 @@ export default function LiveMap({ employees, historyPaths, collectionPoints }: L
                 attribution='&copy; OpenStreetMap contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+            {/* Shop Markers */}
+            {shops && shops.map((shop) => {
+                if (!shop.latitude || !shop.longitude) return null
+                return (
+                    <Marker
+                        key={`shop-${shop.id}`}
+                        position={[shop.latitude, shop.longitude]}
+                        icon={shopIcon}
+                    >
+                        <Popup>
+                            <div className="font-bold text-lg">{shop.name}</div>
+                            <div className="text-sm text-gray-600">{shop.address}</div>
+                            {shop.dueAmount > 0 && (
+                                <div className="text-sm font-semibold text-red-600 mt-1">
+                                    Due: ₹{shop.dueAmount}
+                                </div>
+                            )}
+                        </Popup>
+                    </Marker>
+                )
+            })}
+
             {/* Live Employee Markers */}
             {employees.map((emp, idx) => {
                 if (!emp.lastLatitude || !emp.lastLongitude) return null

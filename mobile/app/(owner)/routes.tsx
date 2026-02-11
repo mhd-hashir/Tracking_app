@@ -44,25 +44,27 @@ export default function OwnerRoutesScreen() {
     };
 
     const renderItem = ({ item }: { item: Route }) => (
-        <View style={styles.card}>
-            <View style={styles.iconContainer}>
-                <RouteIcon size={24} color="#4f46e5" />
-            </View>
-            <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <View style={styles.detailRow}>
-                    <Text style={styles.countText}>{item._count.stops} Stops</Text>
-                    {item.assignedTo && (
-                        <View style={styles.assigneeBadge}>
-                            <User size={12} color="#15803d" />
-                            <Text style={styles.assigneeText} numberOfLines={1}>
-                                {item.assignedTo.name || item.assignedTo.email}
-                            </Text>
-                        </View>
-                    )}
+        <Link href={{ pathname: "/(owner)/edit-route", params: { id: item.id } }} asChild>
+            <TouchableOpacity style={styles.card}>
+                <View style={styles.iconContainer}>
+                    <RouteIcon size={24} color="#4f46e5" />
                 </View>
-            </View>
-        </View>
+                <View style={styles.info}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <View style={styles.detailRow}>
+                        <Text style={styles.countText}>{item._count.stops} Stops</Text>
+                        {item.assignedTo && (
+                            <View style={styles.assigneeBadge}>
+                                <User size={12} color="#15803d" />
+                                <Text style={styles.assigneeText} numberOfLines={1}>
+                                    {item.assignedTo.name || item.assignedTo.email}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        </Link>
     );
 
     return (

@@ -1,42 +1,37 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
+import { WebView } from 'react-native-webview';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
-import { RefreshCcw } from 'lucide-react-native';
+import { User, MapPin } from 'lucide-react-native';
 
-interface EmployeeLocation {
-    id: string;
-    name: string;
-    email: string;
-    isOnDuty: boolean;
-    lastLatitude: number | null;
-    lastLongitude: number | null;
-    lastLocationUpdate: string | null;
-}
-
-export default function OwnerMapScreen() {
-    const [employees, setEmployees] = useState<EmployeeLocation[]>([]);
+export default function LiveMapScreen() {
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [shops, setShops] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const webViewRef = useRef<WebView>(null);
     const [mapReady, setMapReady] = useState(false);
 
-    const fetchEmployees = async () => {
+    const fetchLocations = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            if (!token) return;
+            const [empRes, shopRes] = await Promise.all([
+                fetch(`${API_URL}/owner/employees`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_URL}/owner/shops`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
 
-            const response = await fetch(`${API_URL}/owner/employees`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setEmployees(data.employees);
-                if (mapReady) {
-                    updateMapMarkers(data.employees);
-                }
+            if (empRes.ok && shopRes.ok) {
+                const empData = await empRes.json();
+                const shopData = await shopRes.json();
+
+                const emps = empData.employees || [];
+                const shopList = shopData.shops || [];
+
+                setEmployees(emps);
+                setShops(shopList);
+                updateMapMarkers(emps, shopList);
             }
         } catch (error) {
             console.error(error);
@@ -46,167 +41,207 @@ export default function OwnerMapScreen() {
     };
 
     useEffect(() => {
-        fetchEmployees();
-        const interval = setInterval(fetchEmployees, 30000); // Poll every 30s
+        fetchLocations();
+        const interval = setInterval(fetchLocations, 30000); // Poll every 30s
         return () => clearInterval(interval);
     }, []);
 
-    const updateMapMarkers = (data: EmployeeLocation[]) => {
-        if (webViewRef.current) {
-            const markers = data
-                .filter(e => e.lastLatitude && e.lastLongitude)
-                .map(e => ({
-                    lat: e.lastLatitude,
-                    lng: e.lastLongitude,
-                    title: e.name,
-                    status: e.isOnDuty ? 'On Duty' : 'Off Duty',
-                    time: e.lastLocationUpdate ? new Date(e.lastLocationUpdate).toLocaleTimeString() : ''
-                }));
+    const updateMapMarkers = (emps: any[], shopList: any[]) => {
+        if (!mapReady || !webViewRef.current) return;
 
-            webViewRef.current.postMessage(JSON.stringify({ type: 'UPDATE_MARKERS', markers }));
-        }
+        const empMarkers = emps
+            .filter(e => e.lastLatitude && e.lastLongitude)
+            .map(e => ({
+                id: `emp-${e.id}`,
+                lat: e.lastLatitude,
+                lng: e.lastLongitude,
+                title: e.name,
+                status: e.isOnDuty ? 'On Duty' : 'Off Duty',
+                type: 'employee'
+            }));
+
+        const shopMarkers = shopList
+            .filter(s => s.latitude && s.longitude)
+            .map(s => ({
+                id: `shop-${s.id}`,
+                lat: s.latitude,
+                lng: s.longitude,
+                title: s.name,
+                status: s.address, // Use address as subtitle
+                type: 'shop',
+                due: s.dueAmount
+            }));
+
+        const markers = [...empMarkers, ...shopMarkers];
+
+        const script = `
+            if (window.updateMarkers) {
+                window.updateMarkers(${JSON.stringify(markers)});
+            }
+        `;
+        webViewRef.current.injectJavaScript(script);
     };
 
     const handleWebViewMessage = (event: any) => {
-        try {
-            const data = JSON.parse(event.nativeEvent.data);
-            if (data.type === 'MAP_READY') {
-                setMapReady(true);
-                updateMapMarkers(employees);
-            }
-        } catch (error) {
-            console.error('Error parsing WebView message:', error);
+        const message = event.nativeEvent.data;
+        if (message === 'MAP_READY') {
+            setMapReady(true);
+            updateMapMarkers(employees, shops); // Send initial data
         }
     };
 
+    // HTML Content for Leaflet Map
     const mapHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <style>
-            body { margin: 0; padding: 0; }
-            #map { width: 100%; height: 100vh; }
-        </style>
-    </head>
-    <body>
-        <div id="map"></div>
-        <script>
-            var map = L.map('map').setView([0, 0], 2);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                body { margin: 0; padding: 0; }
+                #map { width: 100%; height: 100vh; }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                var map = L.map('map').setView([11.2588, 75.7804], 13); // Default to Calicut
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
 
-            var markers = [];
+                var markers = {};
 
-            // Fix Leaflet icons
-            delete L.Icon.Default.prototype._getIconUrl;
-            L.Icon.Default.mergeOptions({
-                iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-                iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-            });
+                // Custom Icons
+                var onDutyIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                });
 
-            // Signal Ready
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
-            }
+                var offDutyIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                });
 
-            window.addEventListener('message', function(event) {
-                try {
-                    var data = JSON.parse(event.data);
-                    if (data.type === 'UPDATE_MARKERS') {
-                        // Clear old markers
-                        markers.forEach(m => map.removeLayer(m));
-                        markers = [];
+                var shopIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                });
 
-                        var bounds = L.latLngBounds();
-                        var hasMarkers = false;
-
-                        data.markers.forEach(m => {
-                            var color = m.status === 'On Duty' ? 'green' : 'grey';
-                            var marker = L.marker([m.lat, m.lng])
-                                .bindPopup("<b>" + m.title + "</b><br>" + m.status + "<br>Updated: " + m.time)
-                                .addTo(map);
-                            markers.push(marker);
-                            bounds.extend([m.lat, m.lng]);
-                            hasMarkers = true;
-                        });
-
-                        if (hasMarkers) {
-                            map.fitBounds(bounds, { padding: [50, 50] });
-                        }
+                window.updateMarkers = function(data) {
+                    // Remove old markers
+                     for (var id in markers) {
+                        map.removeLayer(markers[id]);
                     }
-                } catch (e) {
-                    console.error('WebView JS Error:', e);
+                    markers = {};
+
+                    var bounds = L.latLngBounds();
+
+                    data.forEach(function(item) {
+                        var icon;
+                        var popupContent = '<b>' + item.title + '</b><br>' + item.status;
+
+                        if (item.type === 'shop') {
+                            icon = shopIcon;
+                            if (item.due > 0) {
+                                popupContent += '<br><span style="color:red">Due: ₹' + item.due + '</span>';
+                            }
+                        } else {
+                            icon = item.status === 'On Duty' ? onDutyIcon : offDutyIcon;
+                        }
+
+                        var marker = L.marker([item.lat, item.lng], {icon: icon})
+                            .bindPopup(popupContent);
+                        
+                        marker.addTo(map);
+                        markers[item.id] = marker;
+                        bounds.extend([item.lat, item.lng]);
+                    });
+
+                    if (data.length > 0) {
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+                };
+
+                // Signal ready
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage('MAP_READY');
                 }
-            });
-        </script>
-    </body>
-    </html>
+            </script>
+        </body>
+        </html>
     `;
 
     return (
         <View style={styles.container}>
-            <Stack.Screen options={{
-                headerTitle: 'Live Tracking',
-                headerRight: () => (
-                    <TouchableOpacity onPress={() => { setLoading(true); fetchEmployees(); }} style={{ marginRight: 10 }}>
-                        <RefreshCcw size={20} color="#4f46e5" />
-                    </TouchableOpacity>
-                )
-            }} />
+            <Stack.Screen options={{ title: 'Live Map' }} />
 
-            <WebView
-                ref={webViewRef}
-                originWhitelist={['*']}
-                source={{ html: mapHtml }}
-                style={styles.map}
-                onMessage={handleWebViewMessage}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-            />
+            {/* Status Overlay */}
+            <View style={styles.statusContainer}>
+                <Text style={styles.statusTitle}>Employee Status</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statusList}>
+                    {employees.map(emp => (
+                        <View key={emp.id} style={[styles.statusChip, emp.isOnDuty ? styles.onDuty : styles.offDuty]}>
+                            <View style={[styles.dot, { backgroundColor: emp.isOnDuty ? '#22c55e' : '#94a3b8' }]} />
+                            <Text style={styles.statusName}>{emp.name}</Text>
+                        </View>
+                    ))}
+                    {employees.length === 0 && <Text style={{ color: '#999', fontSize: 12 }}>No employees found</Text>}
+                </ScrollView>
+            </View>
 
-            {loading && (
-                <View style={styles.loader}>
-                    <ActivityIndicator size="large" color="#4f46e5" />
-                    <Text style={styles.loadingText}>Updating locations...</Text>
-                </View>
-            )}
+            <View style={styles.mapContainer}>
+                <WebView
+                    ref={webViewRef}
+                    originWhitelist={['*']}
+                    source={{ html: mapHtml }}
+                    style={styles.map}
+                    onMessage={handleWebViewMessage}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                />
+                {loading && (
+                    <View style={styles.loader}>
+                        <ActivityIndicator size="large" color="#4f46e5" />
+                    </View>
+                )}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    container: { flex: 1, backgroundColor: '#f8fafc' },
+    statusContainer: {
         backgroundColor: '#fff',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
+        height: 80, // Fixed height
     },
-    map: {
-        flex: 1,
-    },
-    loader: {
-        position: 'absolute',
-        top: 20,
-        left: '30%',
-        right: '30%',
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        padding: 10,
-        borderRadius: 20,
+    statusTitle: { fontSize: 12, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
+    statusList: { flexDirection: 'row' },
+    statusChip: {
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        gap: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#f1f5f9',
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#e2e8f0'
     },
-    loadingText: {
-        fontSize: 12,
-        color: '#4f46e5',
-        fontWeight: '600',
-    }
+    onDuty: { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' },
+    offDuty: { backgroundColor: '#f8fafc', borderColor: '#e2e8f0' },
+    dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+    statusName: { fontSize: 12, fontWeight: '600', color: '#334155' },
+    mapContainer: { flex: 1, position: 'relative' },
+    map: { flex: 1 },
+    loader: { position: 'absolute', top: '50%', left: '50%', marginLeft: -20, marginTop: -20 }
 });

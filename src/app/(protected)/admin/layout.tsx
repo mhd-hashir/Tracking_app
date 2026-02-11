@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
@@ -18,9 +19,11 @@ export default async function AdminLayout({
                 <div className="flex items-center gap-8">
                     <h1 className="text-xl font-bold">FieldTrack Admin</h1>
                     <nav className="flex gap-4 text-sm font-medium text-gray-300">
-                        <a href="/admin" className="hover:text-white transition">Dashboard</a>
-                        <a href="/admin/owners" className="hover:text-white transition">Manage Owners</a>
-                        <a href="/admin/settings" className="hover:text-white transition">Settings</a>
+                        <Link href="/admin" className="hover:text-white transition">Dashboard</Link>
+                        <Link href="/admin/owners" className="hover:text-white transition">Manage Owners</Link>
+                        <Link href="/admin/settings" className="hover:text-white transition">Settings</Link>
+                        <Link href="/admin/logs" className="hover:text-white transition">Logs</Link>
+                        <Link href="/admin/broadcasts" className="hover:text-white transition">Broadcasts</Link>
                     </nav>
                 </div>
                 <div className="flex gap-4">

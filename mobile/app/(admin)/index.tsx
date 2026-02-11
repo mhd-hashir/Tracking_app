@@ -4,12 +4,13 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, A
 import { Stack, useRouter } from 'expo-router';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
-import { Users, UserPlus, TrendingUp, LogOut } from 'lucide-react-native';
+import { Users, UserPlus, TrendingUp, LogOut, DollarSign, FileText, Radio } from 'lucide-react-native';
 
 interface AdminStats {
     totalOwners: number;
     activeOwners: number;
-    inactiveOwners: number;
+    totalEmployees: number;
+    totalRevenue: number;
 }
 
 export default function AdminDashboard() {
@@ -22,12 +23,13 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const response = await fetch(`${API_URL}/admin/stats`, {
+            // Fetch System Stats (New Endpoint)
+            const response = await fetch(`${API_URL}/admin/system/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
             if (response.ok) {
-                setStats(data);
+                setStats(data.stats);
             }
         } catch (error) {
             console.error(error);
@@ -65,14 +67,13 @@ export default function AdminDashboard() {
                     <Text style={styles.nameText}>{user?.name}</Text>
                 </View>
 
-                {/* Stats Grid */}
                 <View style={styles.statsContainer}>
                     <View style={styles.statCard}>
                         <View style={[styles.iconBox, { backgroundColor: '#e0e7ff' }]}>
                             <Users size={24} color="#4f46e5" />
                         </View>
                         <Text style={styles.statValue}>{stats?.totalOwners || 0}</Text>
-                        <Text style={styles.statLabel}>Total Owners</Text>
+                        <Text style={styles.statLabel}>Owners</Text>
                     </View>
                     <View style={styles.statCard}>
                         <View style={[styles.iconBox, { backgroundColor: '#dcfce7' }]}>
@@ -80,6 +81,24 @@ export default function AdminDashboard() {
                         </View>
                         <Text style={styles.statValue}>{stats?.activeOwners || 0}</Text>
                         <Text style={styles.statLabel}>Active</Text>
+                    </View>
+                </View>
+
+                {/* Second Row of Stats */}
+                <View style={styles.statsContainer}>
+                    <View style={styles.statCard}>
+                        <View style={[styles.iconBox, { backgroundColor: '#fff7ed' }]}>
+                            <Users size={24} color="#ea580c" />
+                        </View>
+                        <Text style={styles.statValue}>{stats?.totalEmployees || 0}</Text>
+                        <Text style={styles.statLabel}>Employees</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                        <View style={[styles.iconBox, { backgroundColor: '#f0f9ff' }]}>
+                            <DollarSign size={24} color="#0284c7" />
+                        </View>
+                        <Text style={styles.statValue}>₹{(stats?.totalRevenue || 0).toLocaleString()}</Text>
+                        <Text style={styles.statLabel}>Revenue</Text>
                     </View>
                 </View>
 
@@ -103,6 +122,26 @@ export default function AdminDashboard() {
                     <View style={styles.actionInfo}>
                         <Text style={styles.actionTitle}>Manage Owners</Text>
                         <Text style={styles.actionDesc}>View and edit registered owners</Text>
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(admin)/logs')}>
+                    <View style={[styles.actionIcon, { backgroundColor: '#f0f9ff' }]}>
+                        <FileText size={24} color="#0284c7" />
+                    </View>
+                    <View style={styles.actionInfo}>
+                        <Text style={styles.actionTitle}>System Logs</Text>
+                        <Text style={styles.actionDesc}>View system activities and errors</Text>
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(admin)/broadcasts')}>
+                    <View style={[styles.actionIcon, { backgroundColor: '#fdf4ff' }]}>
+                        <Radio size={24} color="#c026d3" />
+                    </View>
+                    <View style={styles.actionInfo}>
+                        <Text style={styles.actionTitle}>Broadcasts</Text>
+                        <Text style={styles.actionDesc}>Send notifications to all users</Text>
                     </View>
                 </TouchableOpacity>
 

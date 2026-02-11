@@ -1,20 +1,19 @@
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyMobileToken } from '../../utils';
+import { prisma } from '@/lib/db';
+import { verifyToken } from '../../../utils';
 import bcrypt from 'bcryptjs';
 
 // GET: Get specific owner details
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Await params if necessary in newer Next.js versions, strictly speaking params is generic here so we access directly or await if it's a promise in future
-        // In current context, params is likely an object.
-        const { id } = await params;
+        const { id } = params;
 
         const owner = await prisma.user.findUnique({
             where: { id, role: 'OWNER' },
@@ -22,8 +21,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
                 id: true,
                 name: true,
                 email: true,
-                mobile: true,
-                isActive: true,
+                subscriptionStatus: true,
                 createdAt: true,
                 _count: {
                     select: {
@@ -47,22 +45,27 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH: Update specific owner
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { id } = await params;
+        const { id } = params;
         const body = await req.json();
-        const { name, email, mobile, isActive, password } = body;
+        const { name, email, isActive, password } = body;
 
         const updateData: any = {};
         if (name) updateData.name = name;
         if (email) updateData.email = email;
-        if (mobile) updateData.mobile = mobile;
-        if (typeof isActive === 'boolean') updateData.isActive = isActive;
+
+        // Map boolean isActive to subscriptionStatus
+        if (typeof isActive === 'boolean') {
+            updateData.subscriptionStatus = isActive ? 'ACTIVE' : 'INACTIVE';
+        }
+
         if (password) {
             updateData.password = await bcrypt.hash(password, 10);
         }
@@ -70,7 +73,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         const updatedOwner = await prisma.user.update({
             where: { id, role: 'OWNER' },
             data: updateData,
-            select: { id: true, name: true, isActive: true }
+            select: { id: true, name: true, subscriptionStatus: true }
         });
 
         return NextResponse.json(updatedOwner);
@@ -82,14 +85,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE: Remove owner
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { id } = await params;
+        const { id } = params;
 
         await prisma.user.delete({
             where: { id, role: 'OWNER' }

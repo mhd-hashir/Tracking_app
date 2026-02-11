@@ -9,6 +9,9 @@ interface EditOwnerFormProps {
         name: string | null
         email: string
         ownedDomain: string | null
+        planType: string
+        subscriptionStatus: string
+        subscriptionExpiry: Date | null
     }
 }
 
@@ -39,8 +42,37 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">New Password (leave blank to keep current)</label>
+                        <label className="block text-sm font-medium text-gray-700">Password (Leave blank to keep current)</label>
                         <input name="password" type="password" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Plan Type</label>
+                            <select name="planType" defaultValue={owner.planType} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                <option value="FREE">Free</option>
+                                <option value="PRO">Pro</option>
+                                <option value="ENTERPRISE">Enterprise</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Status</label>
+                            <select name="subscriptionStatus" defaultValue={owner.subscriptionStatus} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                <option value="ACTIVE">Active</option>
+                                <option value="INACTIVE">Inactive</option>
+                                <option value="SUSPENDED">Suspended</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Expiry Date</label>
+                        <input
+                            name="subscriptionExpiry"
+                            type="date"
+                            defaultValue={owner.subscriptionExpiry ? new Date(owner.subscriptionExpiry).toISOString().split('T')[0] : ''}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                        />
                     </div>
 
                     {updateState?.error && <div className="text-red-500 text-sm">{updateState.error}</div>}

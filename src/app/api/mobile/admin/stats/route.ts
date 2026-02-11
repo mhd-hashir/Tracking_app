@@ -1,18 +1,18 @@
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyMobileToken } from '../../utils';
+import { prisma } from '@/lib/db';
+import { verifyToken } from '../../utils';
 
 export async function GET(req: Request) {
     try {
-        const auth = await verifyMobileToken(req);
-        if (!auth || auth.user.role !== 'ADMIN') {
+        const auth = await verifyToken(req);
+        if (!auth || auth.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const [totalOwners, activeOwners] = await Promise.all([
             prisma.user.count({ where: { role: 'OWNER' } }),
-            prisma.user.count({ where: { role: 'OWNER', isActive: true } }),
+            prisma.user.count({ where: { role: 'OWNER', subscriptionStatus: 'ACTIVE' } }),
         ]);
 
         return NextResponse.json({

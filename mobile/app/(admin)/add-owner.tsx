@@ -4,6 +4,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Activi
 import { Stack, useRouter } from 'expo-router';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
+import { Picker } from '@react-native-picker/picker';
 import { User, Mail, Lock, Phone, Save } from 'lucide-react-native';
 
 export default function AddOwner() {
@@ -12,6 +13,8 @@ export default function AddOwner() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [mobile, setMobile] = useState('');
+    const [planType, setPlanType] = useState('FREE');
+    const [status, setStatus] = useState('ACTIVE');
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async () => {
@@ -33,9 +36,12 @@ export default function AddOwner() {
                     name,
                     email,
                     password,
-                    mobile
+                    mobile,
+                    planType,
+                    subscriptionStatus: status
                 })
             });
+
 
             const data = await response.json();
             if (response.ok) {
@@ -105,6 +111,30 @@ export default function AddOwner() {
                     />
                 </View>
 
+                <Text style={styles.label}>Plan Type</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={planType}
+                        onValueChange={(itemValue) => setPlanType(itemValue)}
+                    >
+                        <Picker.Item label="Free" value="FREE" />
+                        <Picker.Item label="Pro" value="PRO" />
+                        <Picker.Item label="Enterprise" value="ENTERPRISE" />
+                    </Picker>
+                </View>
+
+                <Text style={styles.label}>Subscription Status</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={status}
+                        onValueChange={(itemValue) => setStatus(itemValue)}
+                    >
+                        <Picker.Item label="Active" value="ACTIVE" />
+                        <Picker.Item label="Inactive" value="INACTIVE" />
+                        <Picker.Item label="Suspended" value="SUSPENDED" />
+                    </Picker>
+                </View>
+
                 <TouchableOpacity
                     style={[styles.submitButton, submitting && styles.disabledButton]}
                     onPress={handleSubmit}
@@ -159,7 +189,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#4f46e5',
         padding: 16,
         borderRadius: 12,
-        gap: 8,
         marginTop: 40,
     },
     disabledButton: { opacity: 0.7 },
@@ -167,5 +196,11 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    pickerContainer: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
     }
 });

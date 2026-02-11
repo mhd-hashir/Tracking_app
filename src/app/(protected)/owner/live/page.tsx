@@ -57,6 +57,10 @@ export default async function LiveDashboardPage() {
         include: { shop: true, employee: true }
     })
 
+    const shops = await prisma.shop.findMany({
+        where: { ownerId: session.user.id }
+    })
+
     return (
         <div className="h-[calc(100vh-100px)] grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 flex flex-col space-y-4">
@@ -66,6 +70,7 @@ export default async function LiveDashboardPage() {
                         employees={employees}
                         historyPaths={historyPaths}
                         collectionPoints={collectionPoints}
+                        shops={shops}
                     />
                 </div>
                 <div className="bg-blue-50 p-4 rounded text-sm text-blue-800">

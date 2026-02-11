@@ -8,10 +8,11 @@ const LiveMap = dynamic(() => import('./live-map'), {
     loading: () => <div className="h-full w-full flex items-center justify-center bg-gray-100">Loading Map...</div>
 })
 
-export default function MapWrapper({ employees, historyPaths, collectionPoints }: {
+export default function MapWrapper({ employees, historyPaths, collectionPoints, shops }: {
     employees: any[],
     historyPaths: any,
-    collectionPoints: any[]
+    collectionPoints: any[],
+    shops: any[]
 }) {
-    return <LiveMap employees={employees} historyPaths={historyPaths} collectionPoints={collectionPoints} />
+    return <LiveMap employees={employees} historyPaths={historyPaths} collectionPoints={collectionPoints} shops={shops} />
 }

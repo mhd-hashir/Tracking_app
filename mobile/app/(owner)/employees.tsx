@@ -49,24 +49,26 @@ export default function EmployeeListScreen() {
     };
 
     const renderItem = ({ item }: { item: Employee }) => (
-        <View style={styles.card}>
-            <View style={styles.iconContainer}>
-                <User size={24} color="#64748b" />
-            </View>
-            <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <View style={styles.detailRow}>
-                    <Mail size={12} color="#94a3b8" />
-                    <Text style={styles.detailText}>{item.email}</Text>
+        <Link href={{ pathname: "/(owner)/edit-employee", params: { id: item.id, employee: JSON.stringify(item) } }} asChild>
+            <TouchableOpacity style={styles.card}>
+                <View style={styles.iconContainer}>
+                    <User size={24} color="#64748b" />
                 </View>
-                {item.mobile && (
-                    <TouchableOpacity onPress={() => handleCall(item.mobile!)} style={styles.detailRow}>
-                        <Phone size={12} color="#4f46e5" />
-                        <Text style={[styles.detailText, { color: '#4f46e5' }]}>{item.mobile}</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
+                <View style={styles.info}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <View style={styles.detailRow}>
+                        <Mail size={12} color="#94a3b8" />
+                        <Text style={styles.detailText}>{item.email}</Text>
+                    </View>
+                    {item.mobile && (
+                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleCall(item.mobile!); }} style={styles.detailRow}>
+                            <Phone size={12} color="#4f46e5" />
+                            <Text style={[styles.detailText, { color: '#4f46e5' }]}>{item.mobile}</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </TouchableOpacity>
+        </Link>
     );
 
     return (

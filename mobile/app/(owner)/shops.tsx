@@ -62,25 +62,27 @@ export default function OwnerShopsScreen() {
     };
 
     const renderItem = ({ item }: { item: Shop }) => (
-        <TouchableOpacity style={styles.card}>
-            <View style={styles.row}>
-                <View style={styles.info}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    {item.address && (
-                        <View style={styles.addressRow}>
-                            <MapPin size={14} color="#666" />
-                            <Text style={styles.address} numberOfLines={1}>{item.address}</Text>
-                        </View>
-                    )}
+        <Link href={{ pathname: "/(owner)/edit-shop", params: { id: item.id, shop: JSON.stringify(item) } }} asChild>
+            <TouchableOpacity style={styles.card}>
+                <View style={styles.row}>
+                    <View style={styles.info}>
+                        <Text style={styles.name}>{item.name}</Text>
+                        {item.address && (
+                            <View style={styles.addressRow}>
+                                <MapPin size={14} color="#666" />
+                                <Text style={styles.address} numberOfLines={1}>{item.address}</Text>
+                            </View>
+                        )}
+                    </View>
+                    <View style={styles.amount}>
+                        <Text style={styles.amountLabel}>Due</Text>
+                        <Text style={[styles.amountValue, item.dueAmount > 0 ? styles.red : styles.green]}>
+                            ₹{item.dueAmount.toLocaleString()}
+                        </Text>
+                    </View>
                 </View>
-                <View style={styles.amount}>
-                    <Text style={styles.amountLabel}>Due</Text>
-                    <Text style={[styles.amountValue, item.dueAmount > 0 ? styles.red : styles.green]}>
-                        ₹{item.dueAmount.toLocaleString()}
-                    </Text>
-                </View>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+        </Link>
     );
 
     return (

@@ -86,8 +86,12 @@ export default function OwnerLayout() {
 
             {/* HiddenScreens */}
             <Tabs.Screen name="add-shop" options={{ href: null, title: 'Add New Shop' }} />
+            <Tabs.Screen name="edit-shop" options={{ href: null, title: 'Edit Shop' }} />
             <Tabs.Screen name="add-route" options={{ href: null, title: 'Create Route' }} />
+            <Tabs.Screen name="edit-route" options={{ href: null, title: 'Edit Route' }} />
             <Tabs.Screen name="add-employee" options={{ href: null, title: 'Add Employee' }} />
+            <Tabs.Screen name="edit-employee" options={{ href: null, title: 'Edit Employee' }} />
+            <Tabs.Screen name="employee-logs" options={{ href: null, title: 'Duty Logs' }} />
             <Tabs.Screen name="profile" options={{ href: null }} />
         </Tabs>
     );

@@ -1,16 +1,21 @@
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { User, Phone, Mail, Calendar, Trash2, Save } from 'lucide-react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth, API_URL } from '../../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
-import { User, Phone, Mail, Calendar, Trash2 } from 'lucide-react-native';
 
 export default function OwnerDetail() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const [owner, setOwner] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [planType, setPlanType] = useState('FREE');
+    const [status, setStatus] = useState('ACTIVE');
+    const [expiryDate, setExpiryDate] = useState('');
+    const [updating, setUpdating] = useState(false);
 
     const fetchOwner = async () => {
         try {
@@ -21,6 +26,9 @@ export default function OwnerDetail() {
             const data = await response.json();
             if (response.ok) {
                 setOwner(data);
+                setPlanType(data.planType || 'FREE');
+                setStatus(data.subscriptionStatus || 'ACTIVE');
+                setExpiryDate(data.subscriptionExpiry ? data.subscriptionExpiry.split('T')[0] : '');
             }
         } catch (error) {
             console.error(error);
@@ -32,6 +40,36 @@ export default function OwnerDetail() {
     useEffect(() => {
         if (id) fetchOwner();
     }, [id]);
+
+    const handleUpdateSubscription = async () => {
+        setUpdating(true);
+        try {
+            const token = await SecureStore.getItemAsync('session_token');
+            const response = await fetch(`${API_URL}/admin/owners/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    planType,
+                    subscriptionStatus: status,
+                    subscriptionExpiry: expiryDate ? new Date(expiryDate).toISOString() : null
+                })
+            });
+
+            if (response.ok) {
+                Alert.alert('Success', 'Subscription updated');
+                fetchOwner();
+            } else {
+                throw new Error('Failed to update');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update subscription');
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const handleToggleStatus = async () => {
         try {
@@ -126,6 +164,58 @@ export default function OwnerDetail() {
                         <Text style={styles.statLabel}>Shops</Text>
                     </View>
                 </View>
+            </View>
+
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Subscription Management</Text>
+
+                <Text style={styles.label}>Plan Type</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={planType}
+                        onValueChange={(itemValue) => setPlanType(itemValue)}
+                    >
+                        <Picker.Item label="Free" value="FREE" />
+                        <Picker.Item label="Pro" value="PRO" />
+                        <Picker.Item label="Enterprise" value="ENTERPRISE" />
+                    </Picker>
+                </View>
+
+                <Text style={styles.label}>Status</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={status}
+                        onValueChange={(itemValue) => setStatus(itemValue)}
+                    >
+                        <Picker.Item label="Active" value="ACTIVE" />
+                        <Picker.Item label="Inactive" value="INACTIVE" />
+                        <Picker.Item label="Suspended" value="SUSPENDED" />
+                    </Picker>
+                </View>
+
+                <Text style={styles.label}>Expiry Date (YYYY-MM-DD)</Text>
+                <View style={styles.inputContainer}>
+                    <Calendar size={20} color="#94a3b8" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="YYYY-MM-DD"
+                        value={expiryDate}
+                        onChangeText={setExpiryDate}
+                    />
+                </View>
+
+                <TouchableOpacity
+                    style={[styles.btn, styles.updateBtn]}
+                    onPress={handleUpdateSubscription}
+                    disabled={updating}
+                >
+                    {updating ? <ActivityIndicator color="#fff" /> : (
+                        <>
+                            <Save size={20} color="#fff" />
+                            <Text style={[styles.btnText, { color: '#fff' }]}>Update Subscription</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
             </View>
 
             <View style={styles.actions}>
@@ -248,5 +338,38 @@ const styles = StyleSheet.create({
     btnText: {
         fontWeight: '600',
         fontSize: 16,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#475569',
+        marginBottom: 8,
+        marginTop: 12,
+    },
+    pickerContainer: {
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+    },
+    input: {
+        flex: 1,
+        padding: 14,
+        fontSize: 16,
+        color: '#333',
+    },
+    updateBtn: {
+        backgroundColor: '#4f46e5',
+        marginTop: 20,
+        borderColor: '#4f46e5',
     }
 });
