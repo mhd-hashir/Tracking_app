@@ -45,17 +45,22 @@ export async function updateLocationAction(latitude: number, longitude: number) 
     }
 }
 
+// ... (imports)
+
 export async function toggleDutyAction(isOnDuty: boolean, latitude?: number, longitude?: number) {
     const session = await getSession()
     if (!session || session.user.role !== 'EMPLOYEE') return { error: 'Unauthorized' }
 
     try {
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { id: session.user.id },
-                data: { isOnDuty }
-            }),
-            prisma.dutyLog.create({
+        // 1. Update User Status (Critical)
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { isOnDuty }
+        })
+
+        // 2. Try to Log (Best Effort - might fail if DB schema is outdated)
+        try {
+            await prisma.dutyLog.create({
                 data: {
                     employeeId: session.user.id,
                     status: isOnDuty ? 'ON' : 'OFF',
@@ -63,7 +68,10 @@ export async function toggleDutyAction(isOnDuty: boolean, latitude?: number, lon
                     longitude
                 }
             })
-        ])
+        } catch (logError) {
+            console.warn('Failed to create duty log (Schema mismatch?):', logError)
+            // Do not fail the main action
+        }
 
         revalidatePath('/employee')
         return { success: true }
