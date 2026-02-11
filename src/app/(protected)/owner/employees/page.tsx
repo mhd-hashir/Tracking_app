@@ -3,14 +3,20 @@ import { getSession } from '@/lib/auth'
 import { AddEmployeeForm } from './add-employee-form'
 import { getGlobalSettings } from '../../admin/settings/actions'
 import { AllDutyLogs } from './all-duty-logs'
+import { DutyLogFilters } from './duty-log-filters'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmployeesPage() {
+type Props = {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function EmployeesPage({ searchParams }: Props) {
     const session = await getSession()
     if (!session) return null
 
     const settings = await getGlobalSettings()
+    const params = await searchParams
 
     // Fetch Employees
     const employees = await prisma.user.findMany({
@@ -23,7 +29,7 @@ export default async function EmployeesPage() {
             id: true,
             name: true,
             email: true,
-            isOnDuty: true, // Fetch current status
+            isOnDuty: true,
         }
     })
 
@@ -33,14 +39,47 @@ export default async function EmployeesPage() {
 
     const displayDomain = owner?.ownedDomain || settings.defaultDomain
 
+    // Build Filters
+    const nameFilter = typeof params.name === 'string' ? params.name : undefined
+    const statusFilter = typeof params.status === 'string' ? params.status : undefined
+    const dateFilter = typeof params.date === 'string' ? params.date : undefined
+
+    const where: any = {
+        employee: { ownerId: session.user.id }
+    }
+
+    if (nameFilter) {
+        where.employee.name = { contains: nameFilter, mode: 'insensitive' }
+    }
+
+    if (statusFilter) {
+        where.status = statusFilter
+    }
+
+    if (dateFilter) {
+        // Simple date filtering (UTC based)
+        // input[type=date] returns YYYY-MM-DD
+        const startDate = new Date(dateFilter)
+        // Ifinvalid date, ignore
+        if (!isNaN(startDate.getTime())) {
+            const endDate = new Date(startDate)
+            endDate.setDate(endDate.getDate() + 1)
+
+            where.timestamp = {
+                gte: startDate,
+                lt: endDate
+            }
+        }
+    }
+
     // Fetch Duty Logs (Safely)
     let logs: any[] = []
     try {
         logs = await prisma.dutyLog.findMany({
-            where: { employee: { ownerId: session.user.id } },
+            where,
             include: { employee: { select: { name: true } } },
             orderBy: { timestamp: 'desc' },
-            take: 50
+            take: 100 // Increased limit for filtered view
         })
     } catch (e) {
         console.warn("DutyLog table missing or error:", e)
@@ -111,7 +150,13 @@ export default async function EmployeesPage() {
                     <span className="h-2 w-2 rounded-full bg-orange-400"></span>
                     Recent Activity Logs
                 </h3>
+
+                <DutyLogFilters />
+
                 <AllDutyLogs logs={logs} />
+                {logs.length === 100 && (
+                    <p className="text-xs text-center text-gray-400 mt-2">Showing last 100 results. Refine filters to see more.</p>
+                )}
             </div>
         </div>
     )
