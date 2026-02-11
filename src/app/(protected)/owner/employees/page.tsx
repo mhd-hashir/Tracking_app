@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { AddEmployeeForm } from './add-employee-form'
 import { getGlobalSettings } from '../../admin/settings/actions'
+import { AllDutyLogs } from './all-duty-logs'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,12 +11,20 @@ export default async function EmployeesPage() {
     if (!session) return null
 
     const settings = await getGlobalSettings()
+
+    // Fetch Employees
     const employees = await prisma.user.findMany({
         where: {
             role: 'EMPLOYEE',
             ownerId: session.user.id
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            isOnDuty: true, // Fetch current status
+        }
     })
 
     const owner = await prisma.user.findUnique({
@@ -24,44 +33,85 @@ export default async function EmployeesPage() {
 
     const displayDomain = owner?.ownedDomain || settings.defaultDomain
 
+    // Fetch Duty Logs (Safely)
+    let logs: any[] = []
+    try {
+        logs = await prisma.dutyLog.findMany({
+            where: { employee: { ownerId: session.user.id } },
+            include: { employee: { select: { name: true } } },
+            orderBy: { timestamp: 'desc' },
+            take: 50
+        })
+    } catch (e) {
+        console.warn("DutyLog table missing or error:", e)
+    }
+
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold tracking-tight">Manage Employees</h2>
+        <div className="space-y-8 pb-12">
+            <div className="flex justify-between items-center bg-white p-6 rounded-lg border shadow-sm">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">Manage Employees</h2>
+                    <p className="text-sm text-gray-500 mt-1">Add, edit, and track your team status.</p>
+                </div>
+                <div className="text-right">
+                    <span className="text-sm text-gray-500">Total Employees</span>
+                    <div className="text-2xl font-bold text-indigo-600">{employees.length}</div>
+                </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Add New Employee</h3>
-                    <div className="p-4 border rounded-lg bg-white shadow-sm">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
+                        Add New Employee
+                    </h3>
+                    <div className="p-6 border rounded-lg bg-white shadow-sm">
                         <AddEmployeeForm defaultDomain={displayDomain} />
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Your Team</h3>
-                    <div className="rounded-md border bg-white shadow-sm overflow-hidden">
-                        <ul className="divide-y divide-gray-200">
-                            {employees.length === 0 && (
-                                <li className="p-4 text-center text-gray-500 text-sm">No employees added yet.</li>
-                            )}
-                            {employees.map((emp) => (
-                                <li key={emp.id} className="p-4 flex justify-between items-center">
-                                    <div>
-                                        <div className="font-medium text-gray-900">{emp.name}</div>
-                                        <div className="text-sm text-gray-500">{emp.email}</div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                            Active
-                                        </span>
-                                        <a href={`/owner/employees/${emp.id}`} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                        Your Team
+                    </h3>
+                    <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+                        {employees.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500 text-sm">No employees added yet.</div>
+                        ) : (
+                            <ul className="divide-y divide-gray-100">
+                                {employees.map((emp) => (
+                                    <li key={emp.id} className="p-4 flex justify-between items-center hover:bg-gray-50 transition">
+                                        <div>
+                                            <div className="font-medium text-gray-900">{emp.name || 'Unnamed'}</div>
+                                            <div className="text-xs text-gray-500">{emp.email}</div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            {emp.isOnDuty ? (
+                                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 animate-pulse">
+                                                    ● On Duty
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                                                    Off Duty
+                                                </span>
+                                            )}
+                                            <a href={`/owner/employees/${emp.id}`} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium hover:underline">Edit</a>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
+            </div>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-orange-400"></span>
+                    Recent Activity Logs
+                </h3>
+                <AllDutyLogs logs={logs} />
             </div>
         </div>
     )

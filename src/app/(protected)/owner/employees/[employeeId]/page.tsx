@@ -4,7 +4,6 @@ import { EmployeeForm } from '../employee-form'
 import { updateEmployeeAction, deleteEmployeeAction } from '../actions'
 import { redirect } from 'next/navigation'
 import { RouteAssignmentForm } from './route-assignment-form'
-import { DutyHistoryList } from './duty-history-list'
 import { getGlobalSettings } from '../../../admin/settings/actions'
 
 export default async function EditEmployeePage({ params }: { params: Promise<{ employeeId: string }> }) {
@@ -47,19 +46,6 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
         where: { assignedToId: employee.id }
     })
 
-    // Fetch Duty Logs (Handle DB Schema Mismatch Gracefully)
-    let logs: any[] = []
-    try {
-        logs = await prisma.dutyLog.findMany({
-            where: { employeeId: employee.id },
-            orderBy: { timestamp: 'desc' },
-            take: 50 // Limit to last 50
-        })
-    } catch (e) {
-        console.error("Failed to fetch duty logs (Schema mismatch?):", e)
-        // Keep logs empty if table doesn't exist
-    }
-
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-12">
             <div className="flex items-center justify-between">
@@ -70,6 +56,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
                     <div className="bg-white p-6 rounded-lg border shadow-sm">
+                        <h2 className="text-lg font-medium mb-4">Details</h2>
                         <EmployeeForm
                             action={updateEmployeeAction}
                             initialData={initialData}
@@ -78,7 +65,9 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
                             defaultDomain={displayDomain}
                         />
                     </div>
+                </div>
 
+                <div className="space-y-6">
                     <div className="bg-white p-6 rounded-lg border shadow-sm">
                         <h2 className="text-lg font-medium mb-4">Route Schedule</h2>
                         <RouteAssignmentForm
@@ -87,14 +76,6 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ e
                             assignedRoutes={assignedRoutes}
                         />
                     </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-lg border shadow-sm h-fit">
-                    <h2 className="text-lg font-medium mb-4 flex items-center justify-between">
-                        Duty History
-                        <span className="text-xs text-gray-500 font-normal">Last 50 events</span>
-                    </h2>
-                    <DutyHistoryList logs={logs} />
                 </div>
             </div>
         </div>
