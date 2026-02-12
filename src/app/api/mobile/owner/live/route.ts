@@ -13,6 +13,7 @@ export async function GET(request: Request) {
         const employees = await prisma.user.findMany({
             where: {
                 ownerId: user.id,
+                // Make sure we get all employees capable of being tracked
                 role: 'EMPLOYEE'
             },
             select: {
@@ -35,10 +36,13 @@ export async function GET(request: Request) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // Get employee IDs first to optimize or simplify
+        const employeeIds = employees.map(e => e.id);
+
         const historyData = await prisma.locationHistory.findMany({
             where: {
                 timestamp: { gte: today },
-                employee: { ownerId: user.id }
+                employeeId: { in: employeeIds }
             },
             orderBy: { timestamp: 'asc' }
         });
