@@ -17,7 +17,7 @@ export default function LiveMapScreen() {
     const fetchLocations = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const res = await fetch(`${API_URL}/mobile/owner/live`, {
+            const res = await fetch(`${API_URL}/owner/live`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
