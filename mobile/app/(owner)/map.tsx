@@ -16,6 +16,7 @@ export default function LiveMapScreen() {
 
     const fetchLocations = async () => {
         try {
+            console.log('Fetching live locations...');
             const token = await SecureStore.getItemAsync('session_token');
             const res = await fetch(`${API_URL}/owner/live`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -23,6 +24,7 @@ export default function LiveMapScreen() {
 
             if (res.ok) {
                 const data = await res.json();
+                console.log('Live data received:', data.employees?.length, 'employees');
 
                 // data contains: employees, shops, historyPaths, collections
                 const emps = data.employees || [];
@@ -31,13 +33,12 @@ export default function LiveMapScreen() {
                 setEmployees(emps);
                 setShops(shopList);
 
-                // We can also store history and collections if we want to display them in a list
-                // For now, we pass everything to the map
-
                 updateMapElements(data);
+            } else {
+                console.log('Live data fetch failed:', res.status);
             }
         } catch (error) {
-            console.error(error);
+            console.error('Fetch error:', error);
         } finally {
             setLoading(false);
         }
@@ -45,14 +46,23 @@ export default function LiveMapScreen() {
 
     useEffect(() => {
         fetchLocations();
-        const interval = setInterval(fetchLocations, 30000); // Poll every 30s
+        const interval = setInterval(fetchLocations, 10000); // Poll every 10s for better live feel
         return () => clearInterval(interval);
     }, []);
 
     const updateMapElements = (data: any) => {
-        if (!mapReady || !webViewRef.current) return;
+        if (!webViewRef.current) return;
+
+        // If map is not ready, we can't inject yet.
+        // But we have state saved.
+        // "mapReady" state is safer.
+        if (!mapReady) {
+            console.log('Map not ready yet, skipping update');
+            return;
+        }
 
         const { employees, shops, historyPaths, collections } = data;
+        console.log('Updating map elements with', employees.length, 'employees');
 
         const empMarkers = employees
             .filter((e: any) => e.lastLatitude && e.lastLongitude)
@@ -97,6 +107,8 @@ export default function LiveMapScreen() {
         const script = `
             if (window.updateMap) {
                 window.updateMap(${JSON.stringify(payload)});
+            } else {
+                console.log('window.updateMap not defined');
             }
         `;
         webViewRef.current.injectJavaScript(script);
@@ -104,11 +116,10 @@ export default function LiveMapScreen() {
 
     const handleWebViewMessage = (event: any) => {
         const message = event.nativeEvent.data;
+        console.log('WebView Message:', message);
         if (message === 'MAP_READY') {
             setMapReady(true);
-            // Reconstruct payload from current state if needed, or just fetch again? 
-            // Fetching again is safer to ensure sync.
-            fetchLocations();
+            fetchLocations(); // Fetch immediately when map is ready
         }
     };
 
