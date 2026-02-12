@@ -43,7 +43,8 @@ export default function BroadcastsPage() {
                 setForm({ title: '', message: '' });
                 fetchBroadcasts();
             } else {
-                alert('Failed to send broadcast');
+                const data = await res.json();
+                alert(data.error || 'Failed to send broadcast');
             }
         } catch (err) {
             console.error(err);
