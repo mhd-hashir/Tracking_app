@@ -113,12 +113,11 @@ export default function AddOwner() {
                     />
                 </View>
 
-                <Text style={styles.label}>Forced Custom Domain (Optional)</Text>
+                <Text style={styles.label}>Forced Email Domain (Optional)</Text>
                 <View style={styles.inputContainer}>
-                    <Text style={{ color: '#94a3b8', marginRight: 5 }}>https://</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="mycompany.com"
+                        placeholder="@company.com"
                         value={ownedDomain}
                         onChangeText={setOwnedDomain}
                         autoCapitalize="none"

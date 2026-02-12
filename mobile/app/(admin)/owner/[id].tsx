@@ -222,12 +222,11 @@ export default function OwnerDetail() {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Subscription Management</Text>
 
-                <Text style={styles.label}>Forced Custom Domain</Text>
+                <Text style={styles.label}>Forced Email Domain</Text>
                 <View style={styles.inputContainer}>
-                    <Text style={{ color: '#94a3b8', marginRight: 5 }}>https://</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="mycompany.com"
+                        placeholder="@company.com"
                         value={ownedDomain}
                         onChangeText={setOwnedDomain}
                         autoCapitalize="none"
