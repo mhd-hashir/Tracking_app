@@ -66,7 +66,10 @@ export async function POST(req: Request) {
                 email,
                 password: hashedPassword,
                 role: 'OWNER',
-                subscriptionStatus: 'ACTIVE'
+                subscriptionStatus: body.subscriptionStatus || 'ACTIVE',
+                mobile: body.mobile || null,
+                planType: body.planType || 'FREE',
+                ownedDomain: body.ownedDomain || null
             },
             select: {
                 id: true,

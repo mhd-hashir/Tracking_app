@@ -15,6 +15,7 @@ export default function AddOwner() {
     const [mobile, setMobile] = useState('');
     const [planType, setPlanType] = useState('FREE');
     const [status, setStatus] = useState('ACTIVE');
+    const [ownedDomain, setOwnedDomain] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async () => {
@@ -38,9 +39,10 @@ export default function AddOwner() {
                     password,
                     mobile,
                     planType,
-                    subscriptionStatus: status
+                    subscriptionStatus: status,
+                    ownedDomain: ownedDomain || null
                 })
-            });
+            })
 
 
             const data = await response.json();
@@ -111,11 +113,25 @@ export default function AddOwner() {
                     />
                 </View>
 
+                <Text style={styles.label}>Forced Custom Domain (Optional)</Text>
+                <View style={styles.inputContainer}>
+                    <Text style={{ color: '#94a3b8', marginRight: 5 }}>https://</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="mycompany.com"
+                        value={ownedDomain}
+                        onChangeText={setOwnedDomain}
+                        autoCapitalize="none"
+                    />
+                </View>
+
                 <Text style={styles.label}>Plan Type</Text>
                 <View style={styles.pickerContainer}>
                     <Picker
                         selectedValue={planType}
                         onValueChange={(itemValue) => setPlanType(itemValue)}
+                        style={{ color: '#000000' }}
+                        dropdownIconColor="#000000"
                     >
                         <Picker.Item label="Free" value="FREE" />
                         <Picker.Item label="Pro" value="PRO" />
@@ -128,6 +144,8 @@ export default function AddOwner() {
                     <Picker
                         selectedValue={status}
                         onValueChange={(itemValue) => setStatus(itemValue)}
+                        style={{ color: '#000000' }}
+                        dropdownIconColor="#000000"
                     >
                         <Picker.Item label="Active" value="ACTIVE" />
                         <Picker.Item label="Inactive" value="INACTIVE" />

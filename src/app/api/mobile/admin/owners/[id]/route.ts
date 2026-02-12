@@ -70,6 +70,11 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
             updateData.password = await bcrypt.hash(password, 10);
         }
 
+        if (body.planType) updateData.planType = body.planType;
+        if (body.subscriptionStatus) updateData.subscriptionStatus = body.subscriptionStatus;
+        if (body.subscriptionExpiry) updateData.subscriptionExpiry = body.subscriptionExpiry; // Expects ISO string
+        if (body.ownedDomain !== undefined) updateData.ownedDomain = body.ownedDomain; // Allow clearing with null
+
         const updatedOwner = await prisma.user.update({
             where: { id, role: 'OWNER' },
             data: updateData,

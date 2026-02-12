@@ -1,5 +1,5 @@
 
-import { jwtVerify } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import { prisma } from '@/lib/db';
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key-change-it'; // Must match auth.ts
@@ -35,4 +35,16 @@ export async function verifyToken(request: Request) {
     } catch (error) {
         return null;
     }
+}
+
+export async function signToken(payload: any) {
+    const iat = Math.floor(Date.now() / 1000);
+    const exp = iat + 60 * 60 * 24 * 30; // 30 days capture
+
+    return new SignJWT({ user: payload })
+        .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+        .setExpirationTime(exp)
+        .setIssuedAt(iat)
+        .setNotBefore(iat)
+        .sign(key);
 }

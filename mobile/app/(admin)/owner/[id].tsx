@@ -15,7 +15,9 @@ export default function OwnerDetail() {
     const [planType, setPlanType] = useState('FREE');
     const [status, setStatus] = useState('ACTIVE');
     const [expiryDate, setExpiryDate] = useState('');
+    const [ownedDomain, setOwnedDomain] = useState('');
     const [updating, setUpdating] = useState(false);
+    const { signIn } = useAuth(); // Assuming useAuth exposes signIn or we act manually
 
     const fetchOwner = async () => {
         try {
@@ -29,6 +31,7 @@ export default function OwnerDetail() {
                 setPlanType(data.planType || 'FREE');
                 setStatus(data.subscriptionStatus || 'ACTIVE');
                 setExpiryDate(data.subscriptionExpiry ? data.subscriptionExpiry.split('T')[0] : '');
+                setOwnedDomain(data.ownedDomain || '');
             }
         } catch (error) {
             console.error(error);
@@ -54,7 +57,8 @@ export default function OwnerDetail() {
                 body: JSON.stringify({
                     planType,
                     subscriptionStatus: status,
-                    subscriptionExpiry: expiryDate ? new Date(expiryDate).toISOString() : null
+                    subscriptionExpiry: expiryDate ? new Date(expiryDate).toISOString() : null,
+                    ownedDomain: ownedDomain || null
                 })
             });
 
@@ -69,6 +73,55 @@ export default function OwnerDetail() {
         } finally {
             setUpdating(false);
         }
+    };
+
+    const handleMasquerade = async () => {
+        Alert.alert(
+            'Login as Owner',
+            `You are about to login as ${owner.name}. You will be logged out of Admin.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Login',
+                    onPress: async () => {
+                        try {
+                            const token = await SecureStore.getItemAsync('session_token');
+                            const response = await fetch(`${API_URL}/admin/masquerade`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ ownerId: id })
+                            });
+
+                            const data = await response.json();
+                            if (response.ok && data.token) {
+                                // Manual sign in equivalent since useAuth might not expose specific method
+                                await SecureStore.setItemAsync('session_token', data.token);
+                                await SecureStore.setItemAsync('user_role', data.user.role);
+                                // Force reload or navigation
+                                // We can use router.replace but we need to ensure context updates.
+                                // If useAuth has login, use it. Else manual.
+                                // Assuming typical context:
+                                if (signIn) {
+                                    signIn(data.token, data.user);
+                                } else {
+                                    // Fallback if signIn not available in context interface here (it should be)
+                                    // But context usually handles state.
+                                    Alert.alert('Success', 'Logged in as Owner. Please restart app if not redirected.');
+                                }
+                                router.replace('/(owner)');
+                            } else {
+                                Alert.alert('Error', data.error || 'Failed to login as owner');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'Network request failed');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleToggleStatus = async () => {
@@ -169,11 +222,25 @@ export default function OwnerDetail() {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Subscription Management</Text>
 
+                <Text style={styles.label}>Forced Custom Domain</Text>
+                <View style={styles.inputContainer}>
+                    <Text style={{ color: '#94a3b8', marginRight: 5 }}>https://</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="mycompany.com"
+                        value={ownedDomain}
+                        onChangeText={setOwnedDomain}
+                        autoCapitalize="none"
+                    />
+                </View>
+
                 <Text style={styles.label}>Plan Type</Text>
                 <View style={styles.pickerContainer}>
                     <Picker
                         selectedValue={planType}
                         onValueChange={(itemValue) => setPlanType(itemValue)}
+                        style={{ color: '#000000' }}
+                        dropdownIconColor="#000000"
                     >
                         <Picker.Item label="Free" value="FREE" />
                         <Picker.Item label="Pro" value="PRO" />
@@ -186,6 +253,8 @@ export default function OwnerDetail() {
                     <Picker
                         selectedValue={status}
                         onValueChange={(itemValue) => setStatus(itemValue)}
+                        style={{ color: '#000000' }}
+                        dropdownIconColor="#000000"
                     >
                         <Picker.Item label="Active" value="ACTIVE" />
                         <Picker.Item label="Inactive" value="INACTIVE" />
@@ -219,6 +288,14 @@ export default function OwnerDetail() {
             </View>
 
             <View style={styles.actions}>
+                <TouchableOpacity
+                    style={[styles.btn, { borderColor: '#4f46e5', backgroundColor: '#eef2ff', marginBottom: 20 }]}
+                    onPress={handleMasquerade}
+                >
+                    <User size={20} color="#4f46e5" />
+                    <Text style={[styles.btnText, { color: '#4f46e5' }]}>Login as Owner</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     style={[styles.btn, owner.isActive ? styles.suspendBtn : styles.activateBtn]}
                     onPress={handleToggleStatus}
