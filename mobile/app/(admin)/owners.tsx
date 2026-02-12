@@ -64,7 +64,7 @@ export default function OwnersList() {
     };
 
     const renderItem = ({ item }: { item: Owner }) => (
-        <TouchableOpacity style={styles.card} onPress={() => router.push(`/(admin)/owner/${item.id}`)}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push(`/(admin)/owner/${item.id}` as any)}>
             <View style={styles.cardContent}>
                 <View style={styles.info}>
                     <Text style={styles.name}>{item.name}</Text>

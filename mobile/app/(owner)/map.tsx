@@ -17,21 +17,24 @@ export default function LiveMapScreen() {
     const fetchLocations = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const [empRes, shopRes] = await Promise.all([
-                fetch(`${API_URL}/owner/employees`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_URL}/owner/shops`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
+            const res = await fetch(`${API_URL}/mobile/owner/live`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-            if (empRes.ok && shopRes.ok) {
-                const empData = await empRes.json();
-                const shopData = await shopRes.json();
+            if (res.ok) {
+                const data = await res.json();
 
-                const emps = empData.employees || [];
-                const shopList = shopData.shops || [];
+                // data contains: employees, shops, historyPaths, collections
+                const emps = data.employees || [];
+                const shopList = data.shops || [];
 
                 setEmployees(emps);
                 setShops(shopList);
-                updateMapMarkers(emps, shopList);
+
+                // We can also store history and collections if we want to display them in a list
+                // For now, we pass everything to the map
+
+                updateMapElements(data);
             }
         } catch (error) {
             console.error(error);
@@ -46,37 +49,54 @@ export default function LiveMapScreen() {
         return () => clearInterval(interval);
     }, []);
 
-    const updateMapMarkers = (emps: any[], shopList: any[]) => {
+    const updateMapElements = (data: any) => {
         if (!mapReady || !webViewRef.current) return;
 
-        const empMarkers = emps
-            .filter(e => e.lastLatitude && e.lastLongitude)
-            .map(e => ({
+        const { employees, shops, historyPaths, collections } = data;
+
+        const empMarkers = employees
+            .filter((e: any) => e.lastLatitude && e.lastLongitude)
+            .map((e: any) => ({
                 id: `emp-${e.id}`,
                 lat: e.lastLatitude,
                 lng: e.lastLongitude,
                 title: e.name,
                 status: e.isOnDuty ? 'On Duty' : 'Off Duty',
-                type: 'employee'
+                type: 'employee',
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png' // default on duty
             }));
 
-        const shopMarkers = shopList
-            .filter(s => s.latitude && s.longitude)
-            .map(s => ({
+        const shopMarkers = shops
+            .filter((s: any) => s.latitude && s.longitude)
+            .map((s: any) => ({
                 id: `shop-${s.id}`,
                 lat: s.latitude,
                 lng: s.longitude,
                 title: s.name,
-                status: s.address, // Use address as subtitle
+                status: s.address,
                 type: 'shop',
                 due: s.dueAmount
             }));
 
-        const markers = [...empMarkers, ...shopMarkers];
+        // Format collections for map
+        const collectionMarkers = collections.map((c: any) => ({
+            id: `col-${c.id}`,
+            lat: c.shop.latitude, // Assuming we want to show where it happened (shop path usually)
+            lng: c.shop.longitude,
+            title: `Collection: ₹${c.amount}`,
+            status: `By ${c.employee.name} at ${new Date(c.collectedAt).toLocaleTimeString()}`,
+            type: 'collection'
+        }));
+
+        const payload = {
+            markers: [...empMarkers, ...shopMarkers],
+            paths: historyPaths, // Object { empId: [{lat, lng}, ...] }
+            collections: collections
+        };
 
         const script = `
-            if (window.updateMarkers) {
-                window.updateMarkers(${JSON.stringify(markers)});
+            if (window.updateMap) {
+                window.updateMap(${JSON.stringify(payload)});
             }
         `;
         webViewRef.current.injectJavaScript(script);
@@ -86,7 +106,9 @@ export default function LiveMapScreen() {
         const message = event.nativeEvent.data;
         if (message === 'MAP_READY') {
             setMapReady(true);
-            updateMapMarkers(employees, shops); // Send initial data
+            // Reconstruct payload from current state if needed, or just fetch again? 
+            // Fetching again is safer to ensure sync.
+            fetchLocations();
         }
     };
 
@@ -111,7 +133,8 @@ export default function LiveMapScreen() {
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
 
-                var markers = {};
+                var pathsLayer = L.layerGroup().addTo(map);
+                var markersLayer = L.layerGroup().addTo(map);
 
                 // Custom Icons
                 var onDutyIcon = L.icon({
@@ -132,16 +155,25 @@ export default function LiveMapScreen() {
                     iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                 });
 
-                window.updateMarkers = function(data) {
-                    // Remove old markers
-                     for (var id in markers) {
-                        map.removeLayer(markers[id]);
-                    }
-                    markers = {};
+                window.updateMap = function(payload) {
+                    markersLayer.clearLayers();
+                    pathsLayer.clearLayers();
 
                     var bounds = L.latLngBounds();
 
-                    data.forEach(function(item) {
+                    // Draw Paths
+                    if (payload.paths) {
+                        for (var empId in payload.paths) {
+                            var path = payload.paths[empId];
+                            if (path && path.length > 0) {
+                                var latlngs = path.map(p => [p.latitude, p.longitude]);
+                                L.polyline(latlngs, {color: 'blue', weight: 3, opacity: 0.6}).addTo(pathsLayer);
+                            }
+                        }
+                    }
+
+                    // Draw Markers
+                    payload.markers.forEach(function(item) {
                         var icon;
                         var popupContent = '<b>' + item.title + '</b><br>' + item.status;
 
@@ -157,12 +189,11 @@ export default function LiveMapScreen() {
                         var marker = L.marker([item.lat, item.lng], {icon: icon})
                             .bindPopup(popupContent);
                         
-                        marker.addTo(map);
-                        markers[item.id] = marker;
+                        marker.addTo(markersLayer);
                         bounds.extend([item.lat, item.lng]);
                     });
 
-                    if (data.length > 0) {
+                    if (payload.markers.length > 0) {
                         map.fitBounds(bounds, { padding: [50, 50] });
                     }
                 };

@@ -15,9 +15,11 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string
     const username = formData.get('username') as string
-    const domain = (formData.get('domain') as string)?.trim()
+    const domain = formData.get('domain') as string
+    const ownedDomain = (formData.get('ownedDomain') as string)?.trim() || null
     const password = formData.get('password') as string
 
+    // Subscription details
     const planType = formData.get('planType') as string || 'FREE'
     const subscriptionStatus = formData.get('subscriptionStatus') as string || 'ACTIVE'
     const subscriptionExpiry = formData.get('subscriptionExpiry') as string
@@ -27,7 +29,8 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
     }
 
     try {
-        // Construct email from custom domain
+        // Construct email from default/selected domain (not necessarily the forced custom one)
+        // The form uses 'domain' for the email suffix.
         const email = `${username}@${domain}`
 
         const existing = await prisma.user.findUnique({ where: { email } })
@@ -42,7 +45,7 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
                 email,
                 password: hashedPassword,
                 role: 'OWNER',
-                ownedDomain: domain,
+                ownedDomain, // This is the forced custom domain for their sub-users
                 planType,
                 subscriptionStatus,
                 subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null
@@ -64,11 +67,12 @@ export async function updateOwnerAction(prevState: any, formData: FormData) {
     const ownerId = formData.get('ownerId') as string
     const name = formData.get('name') as string
     const email = formData.get('email') as string
-    const domain = formData.get('domain') as string
+    const domain = (formData.get('domain') as string)?.trim()
     const password = formData.get('password') as string
+    const ownedDomain = (formData.get('ownedDomain') as string)?.trim() || null
 
-    const planType = formData.get('planType') as string
-    const subscriptionStatus = formData.get('subscriptionStatus') as string
+    const planType = formData.get('planType') as string || 'FREE'
+    const subscriptionStatus = formData.get('subscriptionStatus') as string || 'ACTIVE'
     const subscriptionExpiry = formData.get('subscriptionExpiry') as string
 
     if (!name || !email) return { error: 'All fields are required' }
@@ -76,7 +80,7 @@ export async function updateOwnerAction(prevState: any, formData: FormData) {
     const data: any = {
         name,
         email,
-        ownedDomain: domain && domain.trim() !== '' ? domain : null,
+        ownedDomain: ownedDomain && ownedDomain.trim() !== '' ? ownedDomain : null,
         planType,
         subscriptionStatus,
         subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null

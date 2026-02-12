@@ -73,20 +73,20 @@ function MainLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = (segments[0] as any) === '(auth)';
 
     if (!user && !inAuthGroup) {
       // Redirect to login if not authenticated
-      router.replace('/login');
+      router.replace('/login' as any);
     } else if (user) {
       // Redirect based on role
       if (user.role === 'OWNER') {
-        router.replace('/(owner)');
+        router.replace('/(owner)' as any);
       } else if (user.role === 'ADMIN') {
-        router.replace('/(admin)');
+        router.replace('/(admin)' as any);
       } else {
         // Employee
-        router.replace('/(tabs)');
+        router.replace('/(tabs)' as any);
       }
     }
   }, [user, isLoading]);

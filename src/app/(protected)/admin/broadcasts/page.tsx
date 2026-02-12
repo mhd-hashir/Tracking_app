@@ -54,7 +54,10 @@ export default function BroadcastsPage() {
 
     return (
         <div className="space-y-8">
-            <h2 className="text-2xl font-bold">Broadcast Notifications</h2>
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border shadow-sm">
+                <h2 className="text-xl font-bold tracking-tight text-gray-800">Broadcast Notifications</h2>
+                <div className="text-sm text-gray-500">Send alerts to all mobile users</div>
+            </div>
 
             <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium mb-4">Send New Broadcast</h3>

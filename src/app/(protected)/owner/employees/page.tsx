@@ -100,7 +100,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
     try {
         logs = await prisma.dutyLog.findMany({
             where,
-            include: { employee: { select: { name: true } } },
+            include: { employee: { select: { name: true, email: true } } },
             orderBy: { timestamp: 'desc' },
             take: 200 // Increased limit for filtered view
         })

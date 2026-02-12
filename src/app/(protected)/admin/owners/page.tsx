@@ -20,8 +20,11 @@ export default async function OwnersPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold tracking-tight">Manage Owners</h2>
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border shadow-sm">
+                <div>
+                    <h2 className="text-xl font-bold tracking-tight text-gray-800">Manage Owners</h2>
+                    <p className="text-sm text-gray-500">Create and manage shop owner accounts</p>
+                </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">

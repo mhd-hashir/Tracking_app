@@ -104,8 +104,10 @@ export default function DataScreen() {
             const csvContent = header + rows;
 
             // 2. Write to File
+            // @ts-ignore
             const fileUri = FileSystem.documentDirectory + 'report.csv';
             await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+                // @ts-ignore
                 encoding: FileSystem.EncodingType.UTF8
             });
 
@@ -282,8 +284,8 @@ const styles = StyleSheet.create({
     label: { fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: '600' },
     dateInput: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#e2e8f0', padding: 10, borderRadius: 8, backgroundColor: '#f8fafc' },
     inputGroup: { marginBottom: 12 },
-    pickerContainer: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, backgroundColor: '#f8fafc', overflow: 'hidden' },
-    picker: { height: 50, width: '100%' },
+    pickerContainer: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, backgroundColor: '#f8fafc', overflow: 'hidden', justifyContent: 'center' },
+    picker: { width: '100%', height: Platform.OS === 'android' ? 55 : undefined },
     genButton: { backgroundColor: '#4f46e5', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 8, shadowColor: '#4f46e5', shadowOpacity: 0.3, shadowRadius: 5 },
     genBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 

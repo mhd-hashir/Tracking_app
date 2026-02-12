@@ -15,6 +15,9 @@ const icon = L.icon({
     shadowSize: [41, 41]
 })
 
+import { useState, useEffect } from 'react'
+import { getLiveDashboardData } from './actions'
+
 interface LiveMapProps {
     employees: any[]
     historyPaths: { [employeeId: string]: [number, number][] }
@@ -22,7 +25,29 @@ interface LiveMapProps {
     shops: any[]
 }
 
-export default function LiveMap({ employees, historyPaths, collectionPoints, shops }: LiveMapProps) {
+export default function LiveMap({ employees: initialEmployees, historyPaths: initialHistoryPaths, collectionPoints: initialCollectionPoints, shops: initialShops }: LiveMapProps) {
+    const [employees, setEmployees] = useState(initialEmployees)
+    const [historyPaths, setHistoryPaths] = useState(initialHistoryPaths)
+    const [collectionPoints, setCollectionPoints] = useState(initialCollectionPoints)
+    const [shops, setShops] = useState(initialShops)
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const data = await getLiveDashboardData()
+                setEmployees(data.employees)
+                setHistoryPaths(data.historyPaths)
+                setCollectionPoints(data.collectionPoints)
+                // properties of shops typically don't change often, but good to sync
+                setShops(data.shops)
+            } catch (error) {
+                console.error('Failed to poll live data:', error)
+            }
+        }, 10000) // Poll every 10 seconds
+
+        return () => clearInterval(interval)
+    }, [])
+
     // Default center
     const defaultCenter: [number, number] = employees.length > 0 && employees[0].lastLatitude
         ? [employees[0].lastLatitude, employees[0].lastLongitude]

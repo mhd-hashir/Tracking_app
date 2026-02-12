@@ -8,6 +8,7 @@ interface DutyLog {
     timestamp: Date
     employee: {
         name: string | null
+        email: string | null
     }
 }
 
@@ -31,7 +32,7 @@ export function AllDutyLogs({ logs }: { logs: DutyLog[] }) {
                     {logs.map((log) => (
                         <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-4 py-3 font-medium text-gray-900">
-                                {log.employee.name || 'Unknown'}
+                                {log.employee?.name || log.employee?.email || 'Unknown'}
                             </td>
                             <td className="px-4 py-3">
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.status === 'ON' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'

@@ -66,7 +66,7 @@ export default function ShopsScreen() {
     };
 
     const renderItem = ({ item }: { item: Shop }) => (
-        <Link href={`/shop/${item.id}`} asChild>
+        <Link href={`/shop/${item.id}` as any} asChild>
             <TouchableOpacity style={styles.card}>
                 <View style={styles.row}>
                     <View style={styles.info}>

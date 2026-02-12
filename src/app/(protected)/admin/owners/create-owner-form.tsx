@@ -37,6 +37,13 @@ export function CreateOwnerForm({ defaultDomain }: CreateOwnerFormProps) {
                     />
                 </div>
             </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Forced Custom Domain</label>
+                <p className="text-xs text-gray-500 mb-1">Overrides global default. Employees will login as user@customdomain.com</p>
+                <input name="ownedDomain" type="text" className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="e.g. mycompany.com" />
+            </div>
+
             <div>
                 <label className="block text-sm font-medium text-gray-700">Password</label>
                 <input name="password" type="password" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
@@ -45,7 +52,7 @@ export function CreateOwnerForm({ defaultDomain }: CreateOwnerFormProps) {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Plan Type</label>
-                    <select name="planType" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                    <select name="planType" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black bg-white">
                         <option value="FREE">Free</option>
                         <option value="PRO">Pro</option>
                         <option value="ENTERPRISE">Enterprise</option>
@@ -53,7 +60,7 @@ export function CreateOwnerForm({ defaultDomain }: CreateOwnerFormProps) {
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <select name="subscriptionStatus" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                    <select name="subscriptionStatus" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black bg-white">
                         <option value="ACTIVE">Active</option>
                         <option value="INACTIVE">Inactive</option>
                         <option value="SUSPENDED">Suspended</option>

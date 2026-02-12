@@ -1,12 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, FlatList, Linking, Platform } from 'react-native';
 import { Text } from '@/components/Themed';
 import { View } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { LOCATION_TASK_NAME } from '../../services/LocationTask';
-import { MapPin, Briefcase, LocateFixed, Route as RouteIcon, ChevronRight } from 'lucide-react-native';
+import { MapPin, Briefcase, LocateFixed, Route as RouteIcon, ChevronRight, Phone } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Link } from 'expo-router';
 
@@ -20,6 +20,7 @@ interface RouteStop {
     dueAmount: number;
     latitude: number | null;
     longitude: number | null;
+    mobile?: string;
   }
 }
 
@@ -28,6 +29,10 @@ interface AssignedRoute {
   name: string;
   stops: RouteStop[];
 }
+
+// ... (Rest of component until buttons)
+
+
 
 export default function DashboardScreen() {
   const { user, updateUser, signOut } = useAuth();
@@ -195,7 +200,7 @@ export default function DashboardScreen() {
           </View>
 
           {route.stops.map((stop, index) => (
-            <Link key={stop.id} href={`/shop/${stop.shop.id}`} asChild>
+            <Link key={stop.id} href={`/shop/${stop.shop.id}` as any} asChild>
               <TouchableOpacity style={styles.stopItem}>
                 <View style={styles.stopIndex}>
                   <Text style={styles.stopIndexText}>{index + 1}</Text>
@@ -203,6 +208,37 @@ export default function DashboardScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.stopName}>{stop.shop.name}</Text>
                   <Text style={styles.stopAddress} numberOfLines={1}>{stop.shop.address || 'No Address'}</Text>
+
+                  {/* Action Buttons */}
+                  <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#dbeafe' }]}
+                      onPress={() => {
+                        const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+                        const latLng = `${stop.shop.latitude},${stop.shop.longitude}`;
+                        const label = stop.shop.name;
+                        const url = Platform.OS === 'ios'
+                          ? `maps:0,0?q=${label}@${latLng}`
+                          : `geo:0,0?q=${latLng}(${label})`;
+
+                        Linking.openURL(url);
+                      }}
+                    >
+                      <MapPin size={14} color="#2563eb" />
+                      <Text style={[styles.actionBtnText, { color: '#1d4ed8' }]}>Navigate</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#dcfce7' }]}
+                      onPress={() => {
+                        if (stop.shop.mobile) Linking.openURL(`tel:${stop.shop.mobile}`);
+                        else Alert.alert('Check Info', 'No mobile number available for this shop.');
+                      }}
+                    >
+                      <Phone size={14} color="#16a34a" />
+                      <Text style={[styles.actionBtnText, { color: '#15803d' }]}>Call</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 {stop.shop.dueAmount > 0 && (
                   <Text style={styles.dueAmount}>₹{stop.shop.dueAmount}</Text>
@@ -437,5 +473,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#94a3b8',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4
+  },
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: '600'
   }
 });

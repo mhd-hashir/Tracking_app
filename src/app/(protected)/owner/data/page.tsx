@@ -93,7 +93,7 @@ export default function DataPage() {
                         <select
                             value={selectedShop}
                             onChange={(e) => setSelectedShop(e.target.value)}
-                            className="block w-full border rounded p-2 text-sm"
+                            className="block w-full border rounded p-2 py-2 h-10 text-sm"
                         >
                             <option value="ALL">All Shops</option>
                             {options.shops.map(shop => (
@@ -107,7 +107,7 @@ export default function DataPage() {
                         <select
                             value={selectedEmployee}
                             onChange={(e) => setSelectedEmployee(e.target.value)}
-                            className="block w-full border rounded p-2 text-sm"
+                            className="block w-full border rounded p-2 py-2 h-10 text-sm"
                         >
                             <option value="ALL">All Employees</option>
                             {options.employees.map(emp => (
@@ -121,7 +121,7 @@ export default function DataPage() {
                         <select
                             value={selectedPaymentMode}
                             onChange={(e) => setSelectedPaymentMode(e.target.value)}
-                            className="block w-full border rounded p-2 text-sm"
+                            className="block w-full border rounded p-2 py-2 h-10 text-sm"
                         >
                             <option value="ALL">All Methods</option>
                             <option value="CASH">Cash</option>

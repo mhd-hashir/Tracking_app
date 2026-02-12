@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from "react"
-import { updateOwnerAction, deleteOwnerAction } from '../actions'
+import { updateOwnerAction, deleteOwnerAction, masqueradeAsOwner } from '../actions'
 
 interface EditOwnerFormProps {
     owner: {
@@ -21,7 +21,14 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
     return (
         <div className="space-y-8">
             <div className="bg-white p-6 rounded-lg shadow border">
-                <h3 className="text-lg font-medium mb-4">Edit Owner Details</h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Edit Owner Details</h3>
+                    <form action={masqueradeAsOwner.bind(null, owner.id)}>
+                        <button type="submit" className="text-sm bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1 rounded border border-green-200 transition">
+                            Login as Owner
+                        </button>
+                    </form>
+                </div>
                 <form action={updateAction} className="space-y-4">
                     <input type="hidden" name="ownerId" value={owner.id} />
 
@@ -36,9 +43,9 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Custom Domain</label>
+                        <label className="block text-sm font-medium text-gray-700">Forced Custom Domain</label>
                         <p className="text-xs text-gray-500">Overrides global default for this owner's employees</p>
-                        <input name="domain" defaultValue={owner.ownedDomain || ''} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="Leave empty to use global default" />
+                        <input name="ownedDomain" defaultValue={owner.ownedDomain || ''} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="Leave empty to use global default" />
                     </div>
 
                     <div>
@@ -49,7 +56,7 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Plan Type</label>
-                            <select name="planType" defaultValue={owner.planType} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                            <select name="planType" defaultValue={owner.planType} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black bg-white">
                                 <option value="FREE">Free</option>
                                 <option value="PRO">Pro</option>
                                 <option value="ENTERPRISE">Enterprise</option>
@@ -57,7 +64,7 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Status</label>
-                            <select name="subscriptionStatus" defaultValue={owner.subscriptionStatus} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                            <select name="subscriptionStatus" defaultValue={owner.subscriptionStatus} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2 text-black bg-white">
                                 <option value="ACTIVE">Active</option>
                                 <option value="INACTIVE">Inactive</option>
                                 <option value="SUSPENDED">Suspended</option>
