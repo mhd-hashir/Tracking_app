@@ -105,10 +105,18 @@ export default function LiveMapScreen() {
         };
 
         const script = `
-            if (window.updateMap) {
-                window.updateMap(${JSON.stringify(payload)});
-            } else {
-                console.log('window.updateMap not defined');
+            try {
+                if (window.updateMap) {
+                    window.updateMap(${JSON.stringify(payload)});
+                } else {
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage('ERROR: window.updateMap not defined');
+                    }
+                }
+            } catch (e) {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage('ERROR: JS Injection failed ' + e.toString());
+                }
             }
         `;
         webViewRef.current.injectJavaScript(script);
@@ -167,6 +175,13 @@ export default function LiveMapScreen() {
                 });
 
                 window.updateMap = function(payload) {
+                    // Debug alert to confirm function call
+                    // alert('Map Update: ' + payload.markers.length + ' markers'); 
+                    // sending message back is better
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage('DEBUG: updateMap called with ' + payload.markers.length + ' markers');
+                    }
+
                     markersLayer.clearLayers();
                     pathsLayer.clearLayers();
 
