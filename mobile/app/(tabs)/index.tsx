@@ -94,9 +94,9 @@ export default function DashboardScreen() {
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
       if (!hasStarted) {
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 50,
-          deferredUpdatesInterval: 10000,
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 5,
+          deferredUpdatesInterval: 2000,
           foregroundService: {
             notificationTitle: "FieldTrack Active",
             notificationBody: "Tracking your location for work.",
@@ -181,7 +181,27 @@ export default function DashboardScreen() {
                 {user?.isOnDuty ? 'Go Off Duty' : 'Go On Duty'}
               </Text>
             }
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleButton, { marginTop: 10, backgroundColor: '#64748b' }]}
+              onPress={async () => {
+                try {
+                  const loc = await Location.getCurrentPositionAsync({});
+                  const token = await SecureStore.getItemAsync('session_token');
+                  if (!token) { Alert.alert('Error', 'No token'); return; }
+                  const res = await fetch(`${API_URL}/tracking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ latitude: loc.coords.latitude, longitude: loc.coords.longitude, timestamp: loc.timestamp })
+                  });
+                  if (res.ok) Alert.alert('Success', 'Location sent manually!');
+                  else Alert.alert('Error', 'Failed to send location');
+                } catch (e: any) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+            >
+              <Text style={styles.toggleText}>Force Location Update</Text>
+            </TouchableOpacity>
         </View>
       </View>
 
