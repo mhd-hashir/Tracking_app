@@ -89,6 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signOut = async () => {
+        try {
+            const token = await SecureStore.getItemAsync('session_token');
+            if (token) {
+                // Call logout API to log event
+                await fetch(`${API_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            }
+        } catch (e) {
+            console.error('Logout log error', e);
+        }
+
         await SecureStore.deleteItemAsync('session_token');
         await SecureStore.deleteItemAsync('user_data');
         setUser(null);

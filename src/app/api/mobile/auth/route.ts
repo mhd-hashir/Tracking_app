@@ -48,6 +48,15 @@ export async function POST(request: Request) {
             }
         });
 
+        // Log Login (Mobile)
+        await prisma.systemLog.create({
+            data: {
+                level: 'INFO',
+                message: `User logged in (Mobile): ${user.email}`,
+                userId: user.id
+            }
+        });
+
         return NextResponse.json({
             success: true,
             token,

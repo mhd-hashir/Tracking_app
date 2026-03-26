@@ -16,7 +16,7 @@ export default function Broadcasts() {
     const fetchBroadcasts = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const response = await fetch(`${API_URL}/admin/system/broadcasts`, {
+            const response = await fetch(`${API_URL}/mobile/system/broadcasts`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -43,7 +43,7 @@ export default function Broadcasts() {
         setSending(true);
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const response = await fetch(`${API_URL}/admin/system/broadcasts`, {
+            const response = await fetch(`${API_URL}/mobile/system/broadcasts`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,12 +81,12 @@ export default function Broadcasts() {
     );
 
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.container}
         >
             <Stack.Screen options={{ title: 'Broadcast Notifications' }} />
-            
+
             <View style={styles.form}>
                 <Text style={styles.sectionTitle}>New Broadcast</Text>
                 <TextInput
@@ -103,7 +103,7 @@ export default function Broadcasts() {
                     multiline
                     numberOfLines={3}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.sendButton}
                     onPress={handleSend}
                     disabled={sending}

@@ -73,5 +73,17 @@ export async function updateSession() {
 }
 
 export async function logout() {
+    // Log Logout
+    const session = await getSession()
+    if (session?.user?.id) {
+        await prisma.systemLog.create({
+            data: {
+                level: 'INFO',
+                message: `User logged out: ${session.user.email}`,
+                userId: session.user.id
+            }
+        })
+    }
+
     (await cookies()).set('session', '', { expires: new Date(0) })
 }

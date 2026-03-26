@@ -24,6 +24,7 @@ export default function ShopDetailScreen() {
     const [loading, setLoading] = useState(true);
 
     // Collection Form State
+    const [collectionId, setCollectionId] = useState<string | null>(null);
     const [amount, setAmount] = useState('');
     const [paymentMode, setPaymentMode] = useState('CASH'); // CASH, UPI, CHECK
     const [remarks, setRemarks] = useState('');
@@ -36,23 +37,43 @@ export default function ShopDetailScreen() {
     const fetchShopDetails = async () => {
         try {
             const token = await SecureStore.getItemAsync('session_token');
-            const response = await fetch(`${API_URL}/employee/shops`, {
+
+            // 1. Fetch Shop Details
+            const shopRes = await fetch(`${API_URL}/employee/shops`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const data = await response.json();
-            if (response.ok && data.shops) {
-                const found = data.shops.find((s: ShopDetail) => s.id === id);
+
+            // 2. Fetch Existing Collection (if any)
+            const collectionRes = await fetch(`${API_URL}/employee/collection?shopId=${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (shopRes.ok) {
+                const data = await shopRes.json();
+                const found = data.shops?.find((s: ShopDetail) => s.id === id);
                 if (found) setShop(found);
             }
+
+            if (collectionRes.ok) {
+                const cData = await collectionRes.json();
+                if (cData.collection) {
+                    setCollectionId(cData.collection.id);
+                    setAmount(cData.collection.amount.toString());
+                    setPaymentMode(cData.collection.paymentMode);
+                    setRemarks(cData.collection.remarks || '');
+                }
+            }
+
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to load shop details');
+            Alert.alert('Error', 'Failed to load details');
         } finally {
             setLoading(false);
         }
     };
 
     const handleNavigate = () => {
+        // ... (Same)
         if (!shop?.latitude || !shop?.longitude) {
             Alert.alert('No Location', 'This shop does not have GPS coordinates.');
             return;
@@ -69,8 +90,9 @@ export default function ShopDetailScreen() {
     };
 
     const handleSubmit = async () => {
-        if (!amount) {
-            Alert.alert('Error', 'Please enter an amount');
+        // Validate: Amount OR Remarks required
+        if (!amount && !remarks) {
+            Alert.alert('Error', 'Please enter an amount or remarks');
             return;
         }
 
@@ -80,25 +102,41 @@ export default function ShopDetailScreen() {
             let location = await Location.getCurrentPositionAsync({});
             const token = await SecureStore.getItemAsync('session_token');
 
-            const response = await fetch(`${API_URL}/employee/collection`, {
-                method: 'POST',
+            let url = `${API_URL}/employee/collection`;
+            let method = 'POST';
+            let body: any = {
+                shopId: id,
+                amount: parseFloat(amount) || 0,
+                paymentMode,
+                remarks,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+            };
+
+            if (collectionId) {
+                method = 'PUT';
+                // For PUT we sends ID
+                body = {
+                    id: collectionId,
+                    amount: parseFloat(amount) || 0,
+                    paymentMode,
+                    remarks
+                };
+            }
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    shopId: id,
-                    amount: parseFloat(amount),
-                    paymentMode,
-                    remarks,
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude
-                })
+                body: JSON.stringify(body)
             });
 
             const data = await response.json();
             if (response.ok) {
-                Alert.alert('Success', 'Collection recorded successfully', [
+                const msg = collectionId ? 'Collection updated!' : 'Collection recorded!';
+                Alert.alert('Success', msg, [
                     { text: 'OK', onPress: () => router.back() }
                 ]);
             } else {
@@ -197,7 +235,7 @@ export default function ShopDetailScreen() {
                     {submitting ? <ActivityIndicator color="#fff" /> : (
                         <>
                             <CheckCircle size={20} color="#fff" />
-                            <Text style={styles.submitText}>Submit Collection</Text>
+                            <Text style={styles.submitText}>{collectionId ? 'Update Collection' : 'Submit Collection'}</Text>
                         </>
                     )}
                 </TouchableOpacity>

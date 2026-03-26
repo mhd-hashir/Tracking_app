@@ -89,36 +89,55 @@ export default function DataScreen() {
         }
     };
 
-    const exportToCSV = async () => {
+    const exportToExcel = async () => {
         if (!report || !report.data || report.data.length === 0) {
             Alert.alert('No Data', 'Generate a report first.');
             return;
         }
 
         try {
-            // 1. Create CSV String
-            const header = 'Date,Time,Shop,Collected By,Amount,Mode\n';
-            const rows = report.data.map((item: any) =>
-                `${item.date},${item.time},"${item.shopName}","${item.collectedBy}",${item.amount},${item.paymentMode}`
-            ).join('\n');
-            const csvContent = header + rows;
+            // Dynamic import to avoid issues if not used
+            const XLSX = require('xlsx');
 
-            // 2. Write to File
+            // 1. Format Data for Excel
+            const dataToExport = report.data.map((item: any) => ({
+                Date: item.date,
+                Time: item.time,
+                Shop: item.shopName,
+                "Collected By": item.collectedBy,
+                Amount: item.amount,
+                Mode: item.paymentMode
+            }));
+
+            // 2. Create Workbook
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Report");
+
+            // 3. Write to Base64
+            const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+
+            // 4. Save File
+            const fileName = `Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             // @ts-ignore
-            const fileUri = FileSystem.documentDirectory + 'report.csv';
-            await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-                // @ts-ignore
-                encoding: FileSystem.EncodingType.UTF8
+            const fileUri = FileSystem.documentDirectory + fileName;
+
+            await FileSystem.writeAsStringAsync(fileUri, wbout, {
+                encoding: 'base64' // Use string directly to avoid undefined enum error
             });
 
-            // 3. Share
+            // 5. Share
             if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    dialogTitle: 'Export Report'
+                });
             } else {
-                Alert.alert('Error', 'Sharing is not available on this device');
+                Alert.alert('Error', 'Sharing is not available');
             }
 
         } catch (error: any) {
+            console.error(error);
             Alert.alert('Export Error', error.message || 'Failed to export');
         }
     };
@@ -232,9 +251,9 @@ export default function DataScreen() {
                 <View style={{ paddingBottom: 40 }}>
                     <View style={styles.headerRow}>
                         <Text style={styles.sectionTitle}>Results</Text>
-                        <TouchableOpacity onPress={exportToCSV} style={styles.exportBtn}>
+                        <TouchableOpacity onPress={exportToExcel} style={styles.exportBtn}>
                             <Download size={16} color="#4f46e5" />
-                            <Text style={styles.exportText}>Export CSV</Text>
+                            <Text style={styles.exportText}>Export Excel</Text>
                         </TouchableOpacity>
                     </View>
 

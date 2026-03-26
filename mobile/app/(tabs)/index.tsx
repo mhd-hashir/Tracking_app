@@ -10,6 +10,7 @@ import { MapPin, Briefcase, LocateFixed, Route as RouteIcon, ChevronRight, Phone
 import * as SecureStore from 'expo-secure-store';
 import { Link } from 'expo-router';
 
+// ... Interface Update
 interface RouteStop {
   id: string;
   order: string;
@@ -21,278 +22,103 @@ interface RouteStop {
     latitude: number | null;
     longitude: number | null;
     mobile?: string;
+    todayStatus?: {
+      collected: boolean;
+      remark: boolean;
+      edited: boolean;
+    };
   }
 }
 
-interface AssignedRoute {
-  id: string;
-  name: string;
-  stops: RouteStop[];
-}
+// ... (Inside Component)
 
-// ... (Rest of component until buttons)
+{
+  route.stops.map((stop, index) => {
+    const status = stop.shop.todayStatus || { collected: false, remark: false, edited: false };
 
-
-
-export default function DashboardScreen() {
-  const { user, updateUser, signOut } = useAuth();
-  const [permissionStatus, setPermissionStatus] = useState<string>('checking');
-  const [isToggling, setIsToggling] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-
-  const [route, setRoute] = useState<AssignedRoute | null>(null);
-  const [loadingRoute, setLoadingRoute] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      let { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-      if (foregroundStatus !== 'granted') {
-        setPermissionStatus('denied_foreground');
-        // Alert.alert('Permission Denied', 'Allow location access to use tracking features.');
-        return;
-      }
-
-      let { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus !== 'granted') {
-        setPermissionStatus('denied_background');
-      } else {
-        setPermissionStatus('granted');
-        startTracking();
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation(location);
-    })();
-  }, []);
-
-  useEffect(() => {
-    fetchAssignedRoute();
-  }, []);
-
-  const fetchAssignedRoute = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('session_token');
-      if (!token) return;
-
-      const response = await fetch(`${API_URL}/employee/routes`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (response.ok && data.routes && data.routes.length > 0) {
-        // Just take the first assigned route for now
-        setRoute(data.routes[0]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch route", error);
-    } finally {
-      setLoadingRoute(false);
+    let cardStyle = { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }; // Red (Default)
+    if (status.edited) {
+      cardStyle = { backgroundColor: '#dbeafe', borderColor: '#93c5fd' }; // Blue
+    } else if (status.collected) {
+      cardStyle = { backgroundColor: '#dcfce7', borderColor: '#86efac' }; // Green
+    } else if (status.remark) {
+      cardStyle = { backgroundColor: '#fef9c3', borderColor: '#fde047' }; // Yellow
     }
-  };
 
-  const startTracking = async () => {
-    try {
-      const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-      if (!hasStarted) {
-        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 5,
-          deferredUpdatesInterval: 2000,
-          foregroundService: {
-            notificationTitle: "FieldTrack Active",
-            notificationBody: "Tracking your location for work.",
-          }
-        });
-      }
-    } catch (e) {
-      console.error("Failed to start tracking", e);
-    }
-  };
-
-  const toggleDuty = async () => {
-    if (!user) return;
-    setIsToggling(true);
-    const newStatus = !user.isOnDuty;
-
-    try {
-      const token = await SecureStore.getItemAsync('session_token');
-      const { coords } = currentLocation || await Location.getCurrentPositionAsync({});
-
-      const response = await fetch(`${API_URL}/duty`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          isOnDuty: newStatus,
-          latitude: coords.latitude,
-          longitude: coords.longitude
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-
-      updateUser({ isOnDuty: data.isOnDuty });
-
-      if (data.isOnDuty) {
-        startTracking();
-      }
-
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update status');
-    } finally {
-      setIsToggling(false);
-    }
-  };
-
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}</Text>
-          <Text style={styles.role}>{user?.role}</Text>
-        </View>
-        <TouchableOpacity onPress={signOut}>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.statusHeader}>
-          <Briefcase size={24} color="#4f46e5" />
-          <Text style={styles.cardTitle}>Duty Status</Text>
-        </View>
-
-        <View style={styles.statusContent}>
-          <View style={[styles.statusBadge, user?.isOnDuty ? styles.badgeActive : styles.badgeInactive]}>
-            <Text style={[styles.statusText, user?.isOnDuty ? styles.textActive : styles.textInactive]}>
-              {user?.isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
-            </Text>
+    return (
+      <Link key={stop.id} href={`/shop/${stop.shop.id}` as any} asChild>
+        <TouchableOpacity style={[styles.stopItem, { backgroundColor: cardStyle.backgroundColor, borderColor: cardStyle.borderColor, borderWidth: 1, borderRadius: 12, marginBottom: 8, paddingHorizontal: 12 }]}>
+          <View style={styles.stopIndex}>
+            <Text style={styles.stopIndexText}>{index + 1}</Text>
           </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.stopName}>{stop.shop.name}</Text>
+            <Text style={styles.stopAddress} numberOfLines={1}>{stop.shop.address || 'No Address'}</Text>
 
-          <TouchableOpacity
-            style={[styles.toggleButton, isToggling && styles.disabledButton]}
-            onPress={toggleDuty}
-            disabled={isToggling}
-          >
-            {isToggling ? <ActivityIndicator color="#fff" /> :
-              <Text style={styles.toggleText}>
-                {user?.isOnDuty ? 'Go Off Duty' : 'Go On Duty'}
-              </Text>
-            }
-          </TouchableOpacity>
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#fff' }]}
+                onPress={() => {
+                  const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+                  const latLng = `${stop.shop.latitude},${stop.shop.longitude}`;
+                  const label = stop.shop.name;
+                  const url = Platform.OS === 'ios'
+                    ? `maps:0,0?q=${label}@${latLng}`
+                    : `geo:0,0?q=${latLng}(${label})`;
 
-          <TouchableOpacity
-            style={[styles.toggleButton, { marginTop: 10, backgroundColor: '#64748b' }]}
-            onPress={async () => {
-              try {
-                const loc = await Location.getCurrentPositionAsync({});
-                const token = await SecureStore.getItemAsync('session_token');
-                if (!token) { Alert.alert('Error', 'No token'); return; }
-                const res = await fetch(`${API_URL}/tracking`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                  body: JSON.stringify({ latitude: loc.coords.latitude, longitude: loc.coords.longitude, timestamp: loc.timestamp })
-                });
-                if (res.ok) Alert.alert('Success', 'Location sent manually!');
-                else Alert.alert('Error', 'Failed to send location');
-              } catch (e: any) {
-                Alert.alert('Error', e.message);
-              }
-            }}
-          >
-            <Text style={styles.toggleText}>Force Location Update</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+                  Linking.openURL(url);
+                }}
+              >
+                <MapPin size={14} color="#2563eb" />
+                <Text style={[styles.actionBtnText, { color: '#1d4ed8' }]}>Navigate</Text>
+              </TouchableOpacity>
 
-      {/* Route Section */}
-      <Text style={styles.sectionTitle}>Today's Route</Text>
-      {loadingRoute ? (
-        <ActivityIndicator color="#4f46e5" style={{ margin: 20 }} />
-      ) : route ? (
-        <View style={styles.routeCard}>
-          <View style={styles.routeHeader}>
-            <RouteIcon size={20} color="#4f46e5" />
-            <Text style={styles.routeName}>{route.name}</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{route.stops.length} Stops</Text>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#fff' }]}
+                onPress={() => {
+                  if (stop.shop.mobile) Linking.openURL(`tel:${stop.shop.mobile}`);
+                  else Alert.alert('Check Info', 'No mobile number available for this shop.');
+                }}
+              >
+                <Phone size={14} color="#16a34a" />
+                <Text style={[styles.actionBtnText, { color: '#15803d' }]}>Call</Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          {route.stops.map((stop, index) => (
-            <Link key={stop.id} href={`/shop/${stop.shop.id}` as any} asChild>
-              <TouchableOpacity style={styles.stopItem}>
-                <View style={styles.stopIndex}>
-                  <Text style={styles.stopIndexText}>{index + 1}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.stopName}>{stop.shop.name}</Text>
-                  <Text style={styles.stopAddress} numberOfLines={1}>{stop.shop.address || 'No Address'}</Text>
-
-                  {/* Action Buttons */}
-                  <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: '#dbeafe' }]}
-                      onPress={() => {
-                        const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
-                        const latLng = `${stop.shop.latitude},${stop.shop.longitude}`;
-                        const label = stop.shop.name;
-                        const url = Platform.OS === 'ios'
-                          ? `maps:0,0?q=${label}@${latLng}`
-                          : `geo:0,0?q=${latLng}(${label})`;
-
-                        Linking.openURL(url);
-                      }}
-                    >
-                      <MapPin size={14} color="#2563eb" />
-                      <Text style={[styles.actionBtnText, { color: '#1d4ed8' }]}>Navigate</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: '#dcfce7' }]}
-                      onPress={() => {
-                        if (stop.shop.mobile) Linking.openURL(`tel:${stop.shop.mobile}`);
-                        else Alert.alert('Check Info', 'No mobile number available for this shop.');
-                      }}
-                    >
-                      <Phone size={14} color="#16a34a" />
-                      <Text style={[styles.actionBtnText, { color: '#15803d' }]}>Call</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {stop.shop.dueAmount > 0 && (
-                  <Text style={styles.dueAmount}>₹{stop.shop.dueAmount}</Text>
-                )}
-                <ChevronRight size={16} color="#ccc" />
-              </TouchableOpacity>
-            </Link>
-          ))}
-        </View>
+          {stop.shop.dueAmount > 0 && (
+            <Text style={styles.dueAmount}>₹{stop.shop.dueAmount}</Text>
+          )}
+          <ChevronRight size={16} color="#666" />
+        </TouchableOpacity>
+      </Link>
+    )
+  })
+}
+        </View >
       ) : (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No route assigned for today.</Text>
-        </View>
-      )}
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>No route assigned for today.</Text>
+  </View>
+)}
 
-      <View style={[styles.card, { marginTop: 20 }]}>
-        <View style={styles.statusHeader}>
-          <LocateFixed size={24} color="#4f46e5" />
-          <Text style={styles.cardTitle}>Location Status</Text>
-        </View>
-        <Text style={styles.infoText}>
-          Permission: {permissionStatus}
-        </Text>
-        {currentLocation && (
-          <View style={styles.locationInfo}>
-            <Text style={styles.coordText}>Lat: {currentLocation.coords.latitude.toFixed(4)}</Text>
-            <Text style={styles.coordText}>Lng: {currentLocation.coords.longitude.toFixed(4)}</Text>
-          </View>
-        )}
-      </View>
+<View style={[styles.card, { marginTop: 20 }]}>
+  <View style={styles.statusHeader}>
+    <LocateFixed size={24} color="#4f46e5" />
+    <Text style={styles.cardTitle}>Location Status</Text>
+  </View>
+  <Text style={styles.infoText}>
+    Permission: {permissionStatus}
+  </Text>
+  {currentLocation && (
+    <View style={styles.locationInfo}>
+      <Text style={styles.coordText}>Lat: {currentLocation.coords.latitude.toFixed(4)}</Text>
+      <Text style={styles.coordText}>Lng: {currentLocation.coords.longitude.toFixed(4)}</Text>
+    </View>
+  )}
+</View>
 
-    </ScrollView>
+    </ScrollView >
   );
 }
 
@@ -320,9 +146,15 @@ const styles = StyleSheet.create({
     color: '#64748b',
     textTransform: 'capitalize',
   },
+  logoutButton: {
+    backgroundColor: '#dc2626', // Red consistent with owner (FF3B30 similar to dc2626)
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
   logoutText: {
-    color: '#dc2626',
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 14,
   },
   card: {

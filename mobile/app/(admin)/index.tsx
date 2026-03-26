@@ -4,7 +4,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, A
 import { Stack, useRouter } from 'expo-router';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
-import { Users, UserPlus, TrendingUp, LogOut, DollarSign, FileText, Radio } from 'lucide-react-native';
+import { Users, UserPlus, TrendingUp, LogOut, DollarSign, FileText, Radio, Globe } from 'lucide-react-native';
 
 interface AdminStats {
     totalOwners: number;
@@ -140,8 +140,17 @@ export default function AdminDashboard() {
                         <Radio size={24} color="#c026d3" />
                     </View>
                     <View style={styles.actionInfo}>
-                        <Text style={styles.actionTitle}>Broadcasts</Text>
                         <Text style={styles.actionDesc}>Send notifications to all users</Text>
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(admin)/settings')}>
+                    <View style={[styles.actionIcon, { backgroundColor: '#eef2ff' }]}>
+                        <Globe size={24} color="#4f46e5" />
+                    </View>
+                    <View style={styles.actionInfo}>
+                        <Text style={styles.actionTitle}>Global Settings</Text>
+                        <Text style={styles.actionDesc}>Configure system-wide parameters</Text>
                     </View>
                 </TouchableOpacity>
 

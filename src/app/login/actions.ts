@@ -40,5 +40,14 @@ export async function loginAction(prevState: any, formData: FormData) {
     if (user.role === 'OWNER') redirect('/owner')
     if (user.role === 'EMPLOYEE') redirect('/employee')
 
+    // Log Login
+    await prisma.systemLog.create({
+        data: {
+            level: 'INFO',
+            message: `User logged in: ${user.email}`,
+            userId: user.id
+        }
+    })
+
     return { success: true }
 }

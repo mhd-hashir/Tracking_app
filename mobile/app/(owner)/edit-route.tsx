@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import * as SecureStore from 'expo-secure-store';
 import { Save, Check, User as UserIcon, Trash2 } from 'lucide-react-native';
+import { Picker } from '@react-native-picker/picker';
 
 interface Employee { id: string; name: string; email: string; }
 interface Shop { id: string; name: string; address: string; }
@@ -14,6 +14,7 @@ export default function EditRouteScreen() {
     const { id } = useLocalSearchParams();
 
     const [name, setName] = useState('');
+    const [day, setDay] = useState('MONDAY');
     const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
     const [selectedShops, setSelectedShops] = useState<string[]>([]); // Ordered IDs
 
@@ -48,6 +49,7 @@ export default function EditRouteScreen() {
             if (routeRes.ok && routeData.route) {
                 const r = routeData.route;
                 setName(r.name);
+                setDay(r.dayOfWeek || 'MONDAY');
                 setSelectedEmployee(r.assignedToId);
                 // Extract shop IDs from stops
                 if (r.stops) {
@@ -89,12 +91,8 @@ export default function EditRouteScreen() {
                 },
                 body: JSON.stringify({
                     name,
-                    assignedToId: selectedEmployee, // Wait, PUT API didn't handle assignedToId in my implementation plan?
-                    // I need to check if I added logic for assignedTo in PUT. 
-                    // I checked the file content I wrote earlier:
-                    // It updated `name` and `dayOfWeek`. It didn't seem to update `assignedToId`.
-                    // I should fix the API or assume it's handled.
-                    // Let's assume I missed it and should fix API.
+                    dayOfWeek: day,
+                    assignedToId: selectedEmployee,
                     orderedShopIds: selectedShops
                 })
             });
@@ -160,33 +158,28 @@ export default function EditRouteScreen() {
                     onChangeText={setName}
                 />
 
+                <Text style={styles.label}>Day of Week</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={day}
+                        onValueChange={(itemValue) => setDay(itemValue)}
+                        style={[styles.picker, { color: '#000' }]}
+                        dropdownIconColor="#000"
+                    >
+                        <Picker.Item label="Monday" value="MONDAY" />
+                        <Picker.Item label="Tuesday" value="TUESDAY" />
+                        <Picker.Item label="Wednesday" value="WEDNESDAY" />
+                        <Picker.Item label="Thursday" value="THURSDAY" />
+                        <Picker.Item label="Friday" value="FRIDAY" />
+                        <Picker.Item label="Saturday" value="SATURDAY" />
+                        <Picker.Item label="Sunday" value="SUNDAY" />
+                    </Picker>
+                </View>
+
                 {/* NOTE: If API doesn't support updating assignee via PUT /routes/[id], this UI won't work perfectly.
                     Assigning routes is often done via /owner/employees (assign route to employee).
                     But let's keep it here for UI consistency, and I will update API to support it.
                 */}
-                {/* 
-                <Text style={styles.label}>Assign Employee</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.empScroll}>
-                    {employees.map(emp => (
-                        <TouchableOpacity
-                            key={emp.id}
-                            style={[styles.empChip, selectedEmployee === emp.id && styles.empActive]}
-                            onPress={() => setSelectedEmployee(selectedEmployee === emp.id ? null : emp.id)}
-                        >
-                            <UserIcon size={16} color={selectedEmployee === emp.id ? '#fff' : '#64748b'} />
-                            <Text style={[styles.empText, selectedEmployee === emp.id && styles.empTextActive]}>
-                                {emp.name || emp.email}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-                */}
-                {/* Omitting Employee assignment here to simplify, as user requested 'edit route' and usually that means stops. 
-                     Also my PUT API didn't include assignedToId update logic yet. 
-                     Wait, user wants Parity. Web app allows assigning route? 
-                     Web app: 'Manage Routes' -> 'Assign Route' seems to be a separate action or part of creation.
-                     I'll focus on Stops editing first.
-                 */}
 
                 <Text style={styles.label}>Manage Stops ({selectedShops.length})</Text>
                 <View style={styles.shopList}>
@@ -258,5 +251,7 @@ const styles = StyleSheet.create({
     submitButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#4f46e5', padding: 16, borderRadius: 12, gap: 8, marginTop: 30 },
     deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#dc2626', padding: 16, borderRadius: 12, gap: 8, marginTop: 12 },
     disabledButton: { opacity: 0.7 },
-    submitText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+    submitText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    pickerContainer: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, backgroundColor: '#fff', overflow: 'hidden' },
+    picker: { width: '100%', height: Platform.OS === 'android' ? 55 : undefined }
 });
