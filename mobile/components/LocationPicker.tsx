@@ -95,7 +95,7 @@ export default function LocationPicker({ visible, initialLocation, onSelect, onC
                 <View style={styles.mapContainer}>
                     <WebView
                         ref={webViewRef}
-                        source={{ html }}
+                        source={{ html, baseUrl: 'https://fieldtrack.app/' }}
                         style={styles.map}
                         onMessage={handleMessage}
                         onLoad={() => setLoading(false)}

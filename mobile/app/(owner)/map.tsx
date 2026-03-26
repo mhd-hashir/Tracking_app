@@ -255,7 +255,7 @@ export default function LiveMapScreen() {
                 <WebView
                     ref={webViewRef}
                     originWhitelist={['*']}
-                    source={{ html: mapHtml }}
+                    source={{ html: mapHtml, baseUrl: 'https://fieldtrack.app/' }}
                     style={styles.map}
                     onMessage={handleWebViewMessage}
                     javaScriptEnabled={true}
