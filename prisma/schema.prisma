@@ -6,18 +6,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  email     String?  @unique
   name      String?
   password  String   // Hashed
   role      String   // ADMIN, OWNER, EMPLOYEE
-  ownedDomain String? // Custom domain for this owner (e.g., "company.com")
-  mobile      String?
+  mobile    String?  @unique
   
   // Relations
   ownerId   String?  // If user is Employee, this links to their Owner
@@ -134,7 +133,6 @@ model Collection {
 
 model GlobalSettings {
   id            String   @id @default(cuid())
-  defaultDomain String   @default("fieldtrack.com") // e.g., "mycompany.com"
   updatedAt     DateTime @updatedAt
 }
 
@@ -148,7 +146,7 @@ model ImportBatch {
   
   // JSON blob to store revert instructions
   // Structure: { createdShopIds: string[], originalShops: Partial<Shop>[] }
-  revertData Json 
+  revertData String 
   
   @@index([ownerId])
 }
@@ -169,7 +167,7 @@ model SystemLog {
   id        String   @id @default(cuid())
   level     String   // INFO, WARN, ERROR
   message   String
-  metadata  Json?
+  metadata  String?
   userId    String?  // Optional: User who triggered it
   createdAt DateTime @default(now())
 }

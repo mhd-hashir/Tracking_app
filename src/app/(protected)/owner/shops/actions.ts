@@ -197,10 +197,10 @@ export async function importShopsAction(prevState: any, formData: FormData) {
                     ownerId: session.user.id,
                     createdCount,
                     updatedCount,
-                    revertData: {
+                    revertData: JSON.stringify({
                         createdShopIds,
                         originalShops
-                    }
+                    })
                 }
             })
             batchId = batch.id
@@ -235,7 +235,7 @@ export async function undoImportAction(batchId: string) {
             return { success: false, error: 'Undo period has expired (limited to 5 minutes)' }
         }
 
-        const revertData = batch.revertData as any
+        const revertData = JSON.parse(batch.revertData as string) as any
         const createdIds: string[] = revertData.createdShopIds || []
         const originalShops: any[] = revertData.originalShops || []
 
@@ -459,10 +459,10 @@ export async function dueUpdateShopsAction(prevState: any, formData: FormData) {
                     ownerId: session.user.id,
                     createdCount: 0,
                     updatedCount: updatedCount,
-                    revertData: {
+                    revertData: JSON.stringify({
                         createdShopIds: [],
                         originalShops: revertMeta.map(m => m.original)
-                    }
+                    })
                 }
             })
             batchId = batch.id

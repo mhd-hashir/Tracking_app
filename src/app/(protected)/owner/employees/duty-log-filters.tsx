@@ -6,7 +6,7 @@ import { exportDutyLogsAction } from './actions'
 import * as XLSX from 'xlsx'
 
 interface DutyLogFiltersProps {
-    employees: { id: string; name: string | null; email: string | null }[]
+    employees: { id: string; name: string | null; mobile: string | null }[]
 }
 
 export function DutyLogFilters({ employees }: DutyLogFiltersProps) {
@@ -67,7 +67,7 @@ export function DutyLogFilters({ employees }: DutyLogFiltersProps) {
                     <option value="">All Employees</option>
                     {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
-                            {emp.name || emp.email || 'Unnamed'}
+                            {emp.name || emp.mobile || 'Unnamed'}
                         </option>
                     ))}
                 </select>

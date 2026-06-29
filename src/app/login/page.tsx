@@ -17,14 +17,14 @@ export default function LoginPage() {
                 <form action={formAction} className="mt-8 space-y-6">
                     <div className="space-y-4 rounded-md shadow-sm">
                         <div>
-                            <label htmlFor="email" className="sr-only">Email address</label>
+                            <label htmlFor="identifier" className="sr-only">Mobile Number or Admin Email</label>
                             <input
-                                id="email"
-                                name="email"
-                                type="email"
+                                id="identifier"
+                                name="identifier"
+                                type="text"
                                 required
                                 className="relative block w-full rounded-md border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border"
-                                placeholder="Email address"
+                                placeholder="Mobile Number or Admin Email"
                             />
                         </div>
                         <div>

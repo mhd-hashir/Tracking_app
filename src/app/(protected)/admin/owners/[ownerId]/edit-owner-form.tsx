@@ -7,8 +7,8 @@ interface EditOwnerFormProps {
     owner: {
         id: string
         name: string | null
-        email: string
-        ownedDomain: string | null
+        email: string | null
+        mobile: string | null
         planType: string
         subscriptionStatus: string
         subscriptionExpiry: Date | null
@@ -38,14 +38,8 @@ export function EditOwnerForm({ owner }: EditOwnerFormProps) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input name="email" defaultValue={owner.email} type="email" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Forced Custom Domain</label>
-                        <p className="text-xs text-gray-500">Overrides global default for this owner's employees</p>
-                        <input name="ownedDomain" defaultValue={owner.ownedDomain || ''} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="Leave empty to use global default" />
+                        <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
+                        <input name="mobile" defaultValue={owner.mobile || ''} type="text" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
                     </div>
 
                     <div>

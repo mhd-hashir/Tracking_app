@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { AddEmployeeForm } from './add-employee-form'
-import { getGlobalSettings } from '../../admin/settings/actions'
+import { redirect } from 'next/navigation'
+import { EmployeeForm } from './employee-form'
+import { addEmployeeAction } from './actions'
 import { AllDutyLogs } from './all-duty-logs'
 import { DutyLogFilters } from './duty-log-filters'
 
@@ -15,7 +16,6 @@ export default async function EmployeesPage({ searchParams }: Props) {
     const session = await getSession()
     if (!session) return null
 
-    const settings = await getGlobalSettings()
     const params = await searchParams
 
     // Fetch Employees
@@ -28,16 +28,10 @@ export default async function EmployeesPage({ searchParams }: Props) {
         select: {
             id: true,
             name: true,
-            email: true,
+            mobile: true,
             isOnDuty: true,
         }
     })
-
-    const owner = await prisma.user.findUnique({
-        where: { id: session.user.id }
-    })
-
-    const displayDomain = owner?.ownedDomain || settings.defaultDomain
 
     // Build Filters
     const employeeIdFilter = typeof params.employeeId === 'string' ? params.employeeId : undefined
@@ -46,21 +40,21 @@ export default async function EmployeesPage({ searchParams }: Props) {
     const toDate = typeof params.to === 'string' ? params.to : undefined
 
     // Fetch Unique Employees from Logs for Filter
-    let filterOptions: Array<{ id: string, name: string | null, email: string | null }> = []
+    let filterOptions: Array<{ id: string, name: string | null, mobile: string | null }> = []
     try {
         const uniqueLogEmployees = await prisma.dutyLog.findMany({
             where: { employee: { ownerId: session.user.id } },
             distinct: ['employeeId'],
             select: {
                 employee: {
-                    select: { id: true, name: true, email: true }
+                    select: { id: true, name: true, mobile: true }
                 }
             }
         })
         filterOptions = uniqueLogEmployees.map(log => log.employee)
     } catch (e) {
         // Fallback to all employees if logs query fails
-        filterOptions = employees.map(e => ({ id: e.id, name: e.name, email: e.email }))
+        filterOptions = employees.map(e => ({ id: e.id, name: e.name, mobile: e.mobile }))
     }
 
     const where: any = {
@@ -100,7 +94,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
     try {
         logs = await prisma.dutyLog.findMany({
             where,
-            include: { employee: { select: { name: true, email: true } } },
+            include: { employee: { select: { name: true, mobile: true } } },
             orderBy: { timestamp: 'desc' },
             take: 200 // Increased limit for filtered view
         })
@@ -127,8 +121,8 @@ export default async function EmployeesPage({ searchParams }: Props) {
                         <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
                         Add New Employee
                     </h3>
-                    <div className="p-6 border rounded-lg bg-white shadow-sm">
-                        <AddEmployeeForm defaultDomain={displayDomain} />
+                    <div className="p-4 border rounded-lg bg-white shadow-sm">
+                        <EmployeeForm action={addEmployeeAction} submitLabel="Add Employee" />
                     </div>
                 </div>
 
@@ -146,7 +140,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
                                     <li key={emp.id} className="p-4 flex justify-between items-center hover:bg-gray-50 transition">
                                         <div>
                                             <div className="font-medium text-gray-900">{emp.name || 'Unnamed'}</div>
-                                            <div className="text-xs text-gray-500">{emp.email}</div>
+                                            <div className="text-xs text-gray-500">Mobile: {emp.mobile || 'No Mobile'}</div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             {emp.isOnDuty ? (

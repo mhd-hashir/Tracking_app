@@ -13,40 +13,24 @@ export async function addEmployeeAction(prevState: any, formData: FormData) {
     }
 
     const name = formData.get('name') as string
+    const mobile = formData.get('mobile') as string
     const password = formData.get('password') as string
 
-    // Domain Logic
-    // Prioritize Owner's specific domain, fallback to Global Settings
-    const settings = await getGlobalSettings()
-    const owner = await prisma.user.findUnique({ where: { id: session.user.id } })
-
-    let defaultDomain = settings.defaultDomain
-    if (owner?.ownedDomain) {
-        defaultDomain = owner.ownedDomain
-    }
-
-    let email = formData.get('email') as string
-    const username = formData.get('username') as string
-
-    if (username) {
-        email = `${username}@${defaultDomain}`
-    }
-
-    if (!email || !password || !name) {
+    if (!mobile || !password || !name) {
         return { error: 'All fields are required' }
     }
 
     try {
-        const existing = await prisma.user.findUnique({ where: { email } })
+        const existing = await prisma.user.findUnique({ where: { mobile } })
         if (existing) {
-            return { error: 'User already exists' }
+            return { error: 'User with this mobile already exists' }
         }
 
         const hashedPassword = await hashPassword(password)
         await prisma.user.create({
             data: {
                 name,
-                email,
+                mobile,
                 password: hashedPassword,
                 role: 'EMPLOYEE',
                 ownerId: session.user.id,
@@ -67,28 +51,12 @@ export async function updateEmployeeAction(prevState: any, formData: FormData) {
 
     const employeeId = formData.get('employeeId') as string
     const name = formData.get('name') as string
+    const mobile = formData.get('mobile') as string
     const password = formData.get('password') as string
 
-    // Domain Logic
-    // Prioritize Owner's specific domain, fallback to Global Settings
-    const settings = await getGlobalSettings()
-    const owner = await prisma.user.findUnique({ where: { id: session.user.id } })
+    if (!name || !mobile) return { error: 'Name and Mobile are required' }
 
-    let defaultDomain = settings.defaultDomain
-    if (owner?.ownedDomain) {
-        defaultDomain = owner.ownedDomain
-    }
-
-    let email = formData.get('email') as string
-    const username = formData.get('username') as string
-
-    if (username) {
-        email = `${username}@${defaultDomain}`
-    }
-
-    if (!name || !email) return { error: 'Name and Email/Username are required' }
-
-    const data: any = { name, email }
+    const data: any = { name, mobile }
 
     if (password && password.trim() !== '') {
         data.password = await hashPassword(password)
@@ -247,13 +215,13 @@ export async function exportDutyLogsAction(filters: {
 
     const logs = await prisma.dutyLog.findMany({
         where,
-        include: { employee: { select: { name: true, email: true } } },
+        include: { employee: { select: { name: true, mobile: true } } },
         orderBy: { timestamp: 'desc' }
     })
 
     return logs.map(log => ({
         Employee: log.employee.name || 'Unknown',
-        Email: log.employee.email,
+        Mobile: log.employee.mobile || 'No Mobile',
         Status: log.status === 'ON' ? 'On Duty' : 'Off Duty',
         Time: log.timestamp.toISOString(), // Client can format this better if needed, or leave as ISO
         Latitude: log.latitude,

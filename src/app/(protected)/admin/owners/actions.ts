@@ -3,7 +3,6 @@
 import { prisma } from '@/lib/db'
 import { getSession, hashPassword, verifyPassword, encrypt } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
-import { getGlobalSettings } from '../settings/actions'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -14,9 +13,7 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
     }
 
     const name = formData.get('name') as string
-    const username = formData.get('username') as string
-    const domain = formData.get('domain') as string
-    const ownedDomain = (formData.get('ownedDomain') as string)?.trim() || null
+    const mobile = formData.get('mobile') as string
     const password = formData.get('password') as string
 
     // Subscription details
@@ -24,28 +21,23 @@ export async function createOwnerAction(prevState: any, formData: FormData) {
     const subscriptionStatus = formData.get('subscriptionStatus') as string || 'ACTIVE'
     const subscriptionExpiry = formData.get('subscriptionExpiry') as string
 
-    if (!username || !domain || !password || !name) {
+    if (!mobile || !password || !name) {
         return { error: 'All fields are required' }
     }
 
     try {
-        // Construct email from default/selected domain (not necessarily the forced custom one)
-        // The form uses 'domain' for the email suffix.
-        const email = `${username}@${domain}`
-
-        const existing = await prisma.user.findUnique({ where: { email } })
+        const existing = await prisma.user.findUnique({ where: { mobile } })
         if (existing) {
-            return { error: 'User already exists' }
+            return { error: 'User with this mobile already exists' }
         }
 
         const hashedPassword = await hashPassword(password)
         await prisma.user.create({
             data: {
                 name,
-                email,
+                mobile,
                 password: hashedPassword,
                 role: 'OWNER',
-                ownedDomain, // This is the forced custom domain for their sub-users
                 planType,
                 subscriptionStatus,
                 subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null
@@ -66,21 +58,18 @@ export async function updateOwnerAction(prevState: any, formData: FormData) {
 
     const ownerId = formData.get('ownerId') as string
     const name = formData.get('name') as string
-    const email = formData.get('email') as string
-    const domain = (formData.get('domain') as string)?.trim()
+    const mobile = formData.get('mobile') as string
     const password = formData.get('password') as string
-    const ownedDomain = (formData.get('ownedDomain') as string)?.trim() || null
 
     const planType = formData.get('planType') as string || 'FREE'
     const subscriptionStatus = formData.get('subscriptionStatus') as string || 'ACTIVE'
     const subscriptionExpiry = formData.get('subscriptionExpiry') as string
 
-    if (!name || !email) return { error: 'All fields are required' }
+    if (!name || !mobile) return { error: 'All fields are required' }
 
     const data: any = {
         name,
-        email,
-        ownedDomain: ownedDomain && ownedDomain.trim() !== '' ? ownedDomain : null,
+        mobile,
         planType,
         subscriptionStatus,
         subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null
@@ -137,12 +126,12 @@ export async function updateEmployeeByAdminAction(prevState: any, formData: Form
 
     const employeeId = formData.get('employeeId') as string
     const name = formData.get('name') as string
-    const email = formData.get('email') as string
+    const mobile = formData.get('mobile') as string
     const password = formData.get('password') as string
 
-    if (!name || !email) return { error: 'Name and Email are required' }
+    if (!name || !mobile) return { error: 'Name and Mobile are required' }
 
-    const data: any = { name, email }
+    const data: any = { name, mobile }
 
     if (password && password.trim() !== '') {
         data.password = await hashPassword(password)

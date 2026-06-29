@@ -4,7 +4,6 @@ import { masqueradeAsOwner } from './actions'
 import { getGlobalSettings } from '../settings/actions'
 
 export default async function OwnersPage() {
-    const settings = await getGlobalSettings()
     const owners = await prisma.user.findMany({
         where: { role: 'OWNER' },
         orderBy: { createdAt: 'desc' },
@@ -31,7 +30,7 @@ export default async function OwnersPage() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-medium">Add New Owner</h3>
                     <div className="p-4 border rounded-lg bg-white shadow-sm">
-                        <CreateOwnerForm defaultDomain={settings.defaultDomain} />
+                        <CreateOwnerForm />
                     </div>
                 </div>
 
@@ -52,7 +51,7 @@ export default async function OwnersPage() {
                                     <tr key={owner.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">{owner.name}</div>
-                                            <div className="text-sm text-gray-500">{owner.email}</div>
+                                            <div className="text-sm text-gray-500">{owner.mobile || 'No Mobile'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {owner._count.employees} Employees<br />
