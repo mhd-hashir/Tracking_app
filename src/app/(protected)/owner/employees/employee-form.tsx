@@ -16,6 +16,22 @@ interface EmployeeFormProps {
 export function EmployeeForm({ action, initialData, submitLabel, deleteAction }: EmployeeFormProps) {
     const [state, formAction, isPending] = useActionState(action, null)
 
+    return (
+        <div className="space-y-6">
+            <form action={formAction} className="space-y-4">
+                {initialData?.id && <input type="hidden" name="employeeId" value={initialData.id} />}
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input
+                        name="name"
+                        type="text"
+                        required
+                        defaultValue={initialData?.name}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+                    />
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
                     <input

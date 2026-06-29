@@ -36,20 +36,20 @@ export async function loginAction(prevState: any, formData: FormData) {
         path: '/'
     })
 
+    // Log Login
+    const logIdentifier = user.email || user.mobile || 'Unknown'
+    await prisma.systemLog.create({
+        data: {
+            level: 'INFO',
+            message: `User logged in: ${logIdentifier}`,
+            userId: user.id
+        }
+    })
+
     // Redirect based on role
     if (user.role === 'ADMIN') redirect('/admin')
     if (user.role === 'OWNER') redirect('/owner')
     if (user.role === 'EMPLOYEE') redirect('/employee')
-
-    // Log Login
-        const identifier = user.email || user.mobile || 'Unknown'
-        await prisma.systemLog.create({
-            data: {
-                level: 'INFO',
-                message: `User logged in: ${identifier}`,
-            userId: user.id
-        }
-    })
 
     return { success: true }
 }

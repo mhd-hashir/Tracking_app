@@ -8,7 +8,7 @@ interface EditEmployeeAdminFormProps {
     employee: {
         id: string
         name: string | null
-        email: string
+        mobile: string | null
     }
 }
 
@@ -28,8 +28,8 @@ export function EditEmployeeAdminForm({ employee }: EditEmployeeAdminFormProps) 
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input name="email" defaultValue={employee.email} type="email" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
+                        <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
+                        <input name="mobile" defaultValue={employee.mobile || ''} type="text" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" />
                     </div>
 
                     <div>
