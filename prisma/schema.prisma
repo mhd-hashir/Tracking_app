@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -146,7 +146,7 @@ model ImportBatch {
   
   // JSON blob to store revert instructions
   // Structure: { createdShopIds: string[], originalShops: Partial<Shop>[] }
-  revertData String 
+  revertData Json 
   
   @@index([ownerId])
 }
@@ -167,7 +167,7 @@ model SystemLog {
   id        String   @id @default(cuid())
   level     String   // INFO, WARN, ERROR
   message   String
-  metadata  String?
+  metadata  Json?
   userId    String?  // Optional: User who triggered it
   createdAt DateTime @default(now())
 }
